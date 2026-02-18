@@ -1,50 +1,43 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# ProyectoEmbolsadora Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Spec-Driven Development (NON-NEGOTIABLE)
+Toda funcionalidad debe seguir el ciclo: Specification (Qué/Por qué) → Plan (Cómo/Arquitectura) → Tasks (Desglose) → Implementation. No se debe generar código sin un plan técnico aprobado que valide las dependencias.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Industrial Protocol Standards (Modbus)
+Se debe utilizar exclusivamente **Pymodbus v3.1.0** o superior. Queda estrictamente prohibido el uso de APIs obsoletas (ej. `pymodbus.client.sync` o el antiguo `ModbusSlaveContext`). Todas las lecturas deben manejar el orden de bytes (Endianness) para tipos de datos de 32 bits (Floats/Int32).
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Docker-First Infrastructure
+El sistema debe ser orquestado mediante Docker Compose. La comunicación entre el Historian, el Simulador de PLC y la Base de Datos debe realizarse mediante **nombres de servicio** (DNS interno de Docker) y nunca mediante direcciones IP estáticas o `localhost`.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Hardware Target: Raspberry Pi (ARM64)
+Todo desarrollo debe ser compatible con la arquitectura ARM64. Se deben utilizar imágenes base "slim" (ej. `python:3.11-slim-bookworm`) para optimizar el almacenamiento y el rendimiento en la Raspberry Pi.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Resilience & Observability
+Cualquier operación de red (Modbus TCP o escritura en InfluxDB) debe implementar una política de reintentos (retry logic) con un intervalo de 5 segundos. El sistema debe producir logs estructurados para facilitar el debug remoto vía SSH.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Technical Constraints
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### Technology Stack
+- **Runtime**: Python 3.11+
+- **Database**: InfluxDB 2.x (usando `influxdb-client`)
+- **Modbus**: Pymodbus v3+
+- **Orchestration**: Docker Compose V2
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### Data Handling
+- El mapeo de tags debe ser dinámico (vía archivo YAML/JSON).
+- Soporte obligatorio para tipos: Boolean, Int16, Int32, y Float32 (utilizando 2 registros de 16 bits).
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow
+
+### Planning Phase
+El `plan.md` debe validar explícitamente la red de Docker y las versiones de las librerías antes de proceder a la implementación de tareas.
+
+### Implementation Phase
+El agente de IA debe verificar que cada tarea de código cumpla con los principios de esta Constitución, especialmente la compatibilidad con Pymodbus v3.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+Esta Constitución es la autoridad máxima del proyecto. Cualquier cambio en la arquitectura o stack tecnológico requiere una enmienda en este documento antes de ser ejecutada.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-02-16 | **Last Amended**: 2026-02-16

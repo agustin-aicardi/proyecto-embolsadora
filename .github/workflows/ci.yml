@@ -1,0 +1,180 @@
+  integration:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download built image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: proyectoembol_app_image
+
+      - name: Load built image into Docker
+        run: |
+          ls -lah
+          docker load -i proyectoembol_app.tar || docker load -i proyectoembol_app_image/proyectoembol_app.tar
+
+      - name: Create Docker network for CI
+        run: |
+          docker network create ci_net || true
+
+      - name: Start InfluxDB container (initialized) on network
+        run: |
+          docker run -d --name influx_ci --network ci_net -p 8086:8086 \
+            -e INFLUXDB_INIT_MODE=setup \
+            -e INFLUXDB_INIT_USERNAME=admin \
+            -e INFLUXDB_INIT_PASSWORD=pass \
+            -e INFLUXDB_INIT_ORG=org \
+            -e INFLUXDB_INIT_BUCKET=bucket \
+            -e INFLUXDB_INIT_ADMIN_TOKEN=ci-token \
+            influxdb:2.6
+
+      - name: Wait for InfluxDB healthy
+        run: |
+          for i in {1..30}; do
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/health)
+            if [ "$http_code" = "200" ]; then
+              echo "influx healthy"; break
+            fi
+            echo "waiting for influx..."; sleep 2
+          done
+
+      - name: Run historian image (mock Modbus) in background on network
+        run: |
+          IMAGE=proyectoembol_app:latest
+          # Run historian in the same Docker network so it can resolve 'influx_ci'
+          docker run -d --name historian_ci --network ci_net \
+            -v $GITHUB_WORKSPACE/src/historian/tags.yaml:/app/src/historian/tags.yaml:ro \
+            -e INFLUX_URL=http://influx_ci:8086 \
+            -e INFLUX_TOKEN=ci-token \
+            -e INFLUX_ORG=org \
+            -e INFLUX_BUCKET=bucket \
+            -e MODBUS_HOST=mock \
+            -e POLL_INTERVAL=1 \
+            $IMAGE
+
+      - name: Wait for historian to publish points and verify values
+        run: |
+          # wait a few cycles for the historian to write
+          sleep 8
+
+          # Query pack_count (expect integer 123)
+          q_pack='from(bucket:"bucket") |> range(start:-1m) |> filter(fn:(r)=> r._measurement=="historian_measurement" and r.tag=="pack_count") |> last()'
+          resp_pack=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=org" \
+            -H "Authorization: Token ci-token" \
+            -H "Content-type: application/vnd.flux" \
+            --data "$q_pack")
+          echo "pack query response:\n$resp_pack"
+          # extract last non-comment line and take the _value column (CSV last field)
+          val_pack=$(echo "$resp_pack" | grep -v '^#' | tail -n1 | awk -F',' '{print $NF}')
+          echo "pack_count value raw: $val_pack"
+          if [ -z "$val_pack" ]; then
+            echo "pack_count not found"; exit 1
+          fi
+          # compare numerically (exact integer expected)
+          python - <<PY
+import sys
+v = float(sys.argv[1])
+expected = 123.0
+sys.exit(0 if v==expected else 1)
+PY $val_pack
+
+          # Query filled_weight (expect approx 123.456)
+          q_weight='from(bucket:"bucket") |> range(start:-1m) |> filter(fn:(r)=> r._measurement=="historian_measurement" and r.tag=="filled_weight") |> last()'
+          resp_w=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=org" \
+            -H "Authorization: Token ci-token" \
+            -H "Content-type: application/vnd.flux" \
+            --data "$q_weight")
+          echo "weight query response:\n$resp_w"
+          val_w=$(echo "$resp_w" | grep -v '^#' | tail -n1 | awk -F',' '{print $NF}')
+          echo "filled_weight raw: $val_w"
+          if [ -z "$val_w" ]; then
+            echo "filled_weight not found"; exit 1
+          fi
+          python - <<PY
+import sys
+v = float(sys.argv[1])
+expected = 123.456
+ok = abs(v-expected) < 1e-3
+print('value', v, 'expected', expected, 'ok', ok)
+sys.exit(0 if ok else 1)
+PY $val_w
+
+      - name: Stop historian and cleanup
+        run: |
+          docker stop historian_ci || true
+          docker rm historian_ci || true
+          docker stop influx_ci || true
+          docker rm influx_ci || true
+          docker network rm ci_net || true
+            influxdb:2.6
+
+      - name: Wait for InfluxDB healthy
+        run: |
+          for i in {1..30}; do
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/health)
+            if [ "$http_code" = "200" ]; then
+              echo "influx healthy"; break
+            fi
+            echo "waiting for influx..."; sleep 2
+          done
+
+      - name: Run historian image (mock Modbus) in background
+        run: |
+          # mount the repository tags.yaml into the container to provide dynamic tags
+          IMAGE=proyectoembol_app:latest
+          docker run -d --name historian_ci \
+            -p 0:0 \ # no published ports needed
+            -v $GITHUB_WORKSPACE/src/historian/tags.yaml:/app/src/historian/tags.yaml:ro \
+            -e INFLUX_URL=http://host.docker.internal:8086 \
+            -e INFLUX_TOKEN=ci-token \
+            -e INFLUX_ORG=org \
+            -e INFLUX_BUCKET=bucket \
+            -e MODBUS_HOST=mock \
+            -e POLL_INTERVAL=1 \
+            $IMAGE || (
+              # fallback to localhost address if host.docker.internal is unavailable
+              docker run -d --name historian_ci \
+                -v $GITHUB_WORKSPACE/src/historian/tags.yaml:/app/src/historian/tags.yaml:ro \
+                -e INFLUX_URL=http://localhost:8086 \
+                -e INFLUX_TOKEN=ci-token \
+                -e INFLUX_ORG=org \
+                -e INFLUX_BUCKET=bucket \
+                -e MODBUS_HOST=mock \
+                -e POLL_INTERVAL=1 \
+                $IMAGE
+            )
+
+      - name: Wait for historian to publish a point
+        run: |
+          # wait a few cycles
+          sleep 8
+          resp=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=org" \
+            -H "Authorization: Token ci-token" \
+            -H "Content-type: application/vnd.flux" \
+            --data 'from(bucket:"bucket") |> range(start: -1m) |> filter(fn: (r) => r._measurement == "historian_measurement") |> limit(n:1)')
+          echo "Query result: $resp"
+          # simple check: we expect some data (contains _measurement or value field)
+          if echo "$resp" | grep -q "_measurement" || echo "$resp" | grep -q "value"; then
+            echo "Found a point in InfluxDB"
+          else
+            echo "No points found in InfluxDB"; exit 1
+          fi
+
+      - name: Stop historian and cleanup
+        run: |
+          docker stop historian_ci || true
+          docker rm historian_ci || true
+          docker stop influx_ci || true
+          docker rm influx_ci || true

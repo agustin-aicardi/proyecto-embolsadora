@@ -1,0 +1,16 @@
+tags:
+  - name: "conveyor_running"
+    type: "bool"
+    address: 0
+    unit: 1
+
+  - name: "pack_count"
+    type: "int16"
+    address: 10
+    unit: 1
+
+  - name: "filled_weight"
+    type: "float32"
+    address: 20
+    unit: 1
+    byteorder: "big"  # or "little"
