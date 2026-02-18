@@ -1,3 +1,183 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    env:
+      IMAGE: proyectoembol_app:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: |
+          python run_tests.py
+
+      - name: Set up QEMU (for multi-arch builds)
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build ARM64 Docker image with buildx
+        run: |
+          docker buildx build --platform linux/arm64 -t $IMAGE --load .
+
+      - name: Save built image to artifact
+        run: |
+          docker save $IMAGE -o proyectoembol_app.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proyectoembol_app_image
+          path: proyectoembol_app.tar
+
+  integration:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download built image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: proyectoembol_app_image
+
+      - name: Load built image into Docker
+        run: |
+          ls -lah
+          # the artifact may be at root or inside a folder depending on runner
+          if [ -f proyectoembol_app.tar ]; then
+            docker load -i proyectoembol_app.tar
+          else
+            docker load -i proyectoembol_app_image/proyectoembol_app.tar
+          fi
+
+      - name: Create Docker network for CI
+        run: |
+          docker network create ci_net || true
+
+      - name: Start InfluxDB container (initialized) on network
+        run: |
+          docker run -d --name influx_ci --network ci_net -p 8086:8086 \
+            -e INFLUXDB_INIT_MODE=setup \
+            -e INFLUXDB_INIT_USERNAME=admin \
+            -e INFLUXDB_INIT_PASSWORD=pass \
+            -e INFLUXDB_INIT_ORG=org \
+            -e INFLUXDB_INIT_BUCKET=bucket \
+            -e INFLUXDB_INIT_ADMIN_TOKEN=ci-token \
+            influxdb:2.6
+
+      - name: Wait for InfluxDB healthy
+        run: |
+          for i in {1..30}; do
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/health)
+            if [ "$http_code" = "200" ]; then
+              echo "influx healthy"; break
+            fi
+            echo "waiting for influx..."; sleep 2
+          done
+
+      - name: Run historian image (mock Modbus) in background on network
+        run: |
+          IMAGE=proyectoembol_app:latest
+          docker run -d --name historian_ci --network ci_net \
+            -v $GITHUB_WORKSPACE/src/historian/tags.yaml:/app/src/historian/tags.yaml:ro \
+            -e INFLUX_URL=http://influx_ci:8086 \
+            -e INFLUX_TOKEN=ci-token \
+            -e INFLUX_ORG=org \
+            -e INFLUX_BUCKET=bucket \
+            -e MODBUS_HOST=mock \
+            -e POLL_INTERVAL=1 \
+            $IMAGE
+
+      - name: Wait for historian to publish points and verify values
+        run: |
+          # wait a few cycles for the historian to write
+          sleep 8
+
+          # Query pack_count (expect integer 123)
+          q_pack='from(bucket:"bucket") |> range(start:-1m) |> filter(fn:(r)=> r._measurement=="historian_measurement" and r.tag=="pack_count") |> last()'
+          resp_pack=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=org" \
+            -H "Authorization: Token ci-token" \
+            -H "Content-type: application/vnd.flux" \
+            --data "$q_pack")
+          echo "pack query response:\n$resp_pack"
+          val_pack=$(echo "$resp_pack" | grep -v '^#' | tail -n1 | awk -F',' '{print $NF}')
+          echo "pack_count value raw: $val_pack"
+          if [ -z "$val_pack" ]; then
+            echo "pack_count not found"; exit 1
+          fi
+          python - <<PY
+import sys
+v = float(sys.argv[1])
+expected = 123.0
+sys.exit(0 if v==expected else 1)
+PY $val_pack
+
+          # Query filled_weight (expect approx 123.456)
+          q_weight='from(bucket:"bucket") |> range(start:-1m) |> filter(fn:(r)=> r._measurement=="historian_measurement" and r.tag=="filled_weight") |> last()'
+          resp_w=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=org" \
+            -H "Authorization: Token ci-token" \
+            -H "Content-type: application/vnd.flux" \
+            --data "$q_weight")
+          echo "weight query response:\n$resp_w"
+          val_w=$(echo "$resp_w" | grep -v '^#' | tail -n1 | awk -F',' '{print $NF}')
+          echo "filled_weight raw: $val_w"
+          if [ -z "$val_w" ]; then
+            echo "filled_weight not found"; exit 1
+          fi
+          python - <<PY
+import sys
+v = float(sys.argv[1])
+expected = 123.456
+ok = abs(v-expected) < 1e-3
+print('value', v, 'expected', expected, 'ok', ok)
+sys.exit(0 if ok else 1)
+PY $val_w
+
+      - name: Stop historian and cleanup
+        run: |
+          docker stop historian_ci || true
+          docker rm historian_ci || true
+          docker stop influx_ci || true
+          docker rm influx_ci || true
+          docker network rm ci_net || true
   integration:
     needs: test-and-build
     runs-on: ubuntu-latest
