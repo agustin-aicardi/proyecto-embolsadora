@@ -101,9 +101,13 @@ jobs:
       - name: Verify Data
         run: |
           sleep 12
+          echo "--- LOGS DEL HISTORIAN ---"
+          docker logs historian_ci
+          echo "--------------------------"
           q='from(bucket:"bucket") |> range(start:-1m) |> filter(fn:(r) => r._measurement=="historian_measurement") |> last()'
           RESP=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=org" -H "Authorization: Token ci-token" -H "Content-type: application/vnd.flux" --data "$q")
-          python3 -c "import sys, csv, io; s=sys.stdin.read(); r=list(csv.DictReader(io.StringIO(s))); v={x['_field']: x['_value'] for x in r if '_field' in x}; print(v); sys.exit(0 if v.get('pack_count')=='123' else 1)" <<< "$RESP"
+          echo "Respuesta de Influx: $RESP"
+          python3 -c "import sys, csv, io; s=sys.stdin.read(); r=list(csv.DictReader(io.StringIO(s))); v={x['_field']: x['_value'] for x in r if '_field' in x}; print('Diccionario procesado:', v); sys.exit(0 if v.get('pack_count')=='123' else 1)" <<< "$RESP"
 
       - name: Cleanup
         if: always()
