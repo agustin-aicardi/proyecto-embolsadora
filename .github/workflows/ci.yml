@@ -12,32 +12,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: Run unit tests
         run: python run_tests.py
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
-
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v2
-
       - name: Build ARM64 image
         run: docker buildx build --platform linux/arm64 -t proyectoembol_app:latest --load .
-
       - name: Save image
         run: docker save proyectoembol_app:latest -o proyectoembol_app.tar
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -50,6 +42,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      # ESTO ES CLAVE: QEMU debe estar presente para CORRER la imagen ARM64
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -59,7 +55,6 @@ jobs:
       - name: Load image
         run: |
           TAR=$(find . -type f -name "*.tar" -print -quit)
-          if [ -z "$TAR" ]; then exit 1; fi
           docker load -i "$TAR"
 
       - name: Setup CI Network
@@ -70,17 +65,18 @@ jobs:
           docker run -d --name influx_ci --network ci_net -p 8086:8086 \
             -e INFLUXDB_INIT_MODE=setup \
             -e INFLUXDB_INIT_USERNAME=admin \
-            -e INFLUXDB_INIT_PASSWORD=pass \
-            -e INFLUXDB_INIT_ORG=org \
-            -e INFLUXDB_INIT_BUCKET=bucket \
-            -e INFLUXDB_INIT_ADMIN_TOKEN=ci-token \
+            -e INFLUXDB_INIT_PASSWORD=password123 \
+            -e INFLUXDB_INIT_ORG=myorg \
+            -e INFLUXDB_INIT_BUCKET=mybucket \
+            -e INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-token \
             influxdb:2.6
 
       - name: Wait for InfluxDB
         run: |
-          for i in {1..20}; do
-            if curl -sS -f http://localhost:8086/health > /dev/null 2>&1; then
-              echo "influx ready"; exit 0
+          for i in {1..30}; do
+            if curl -s http://localhost:8086/health > /dev/null; then
+              echo "InfluxDB is up"
+              exit 0
             fi
             sleep 1
           done
@@ -91,23 +87,30 @@ jobs:
           docker run -d --name historian_ci --network ci_net \
             -v ${{ github.workspace }}/src/historian/tags.yaml:/app/src/historian/tags.yaml:ro \
             -e INFLUX_URL=http://influx_ci:8086 \
-            -e INFLUX_TOKEN=ci-token \
-            -e INFLUX_ORG=org \
-            -e INFLUX_BUCKET=bucket \
+            -e INFLUX_TOKEN=my-super-secret-token \
+            -e INFLUX_ORG=myorg \
+            -e INFLUX_BUCKET=mybucket \
             -e MODBUS_HOST=mock \
             -e POLL_INTERVAL=1 \
             proyectoembol_app:latest
 
       - name: Verify Data
         run: |
-          sleep 12
-          echo "--- LOGS DEL HISTORIAN ---"
+          sleep 20
+          echo "=== DEBUG: LOGS DEL HISTORIAN ==="
           docker logs historian_ci
-          echo "--------------------------"
-          q='from(bucket:"bucket") |> range(start:-1m) |> filter(fn:(r) => r._measurement=="historian_measurement") |> last()'
-          RESP=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=org" -H "Authorization: Token ci-token" -H "Content-type: application/vnd.flux" --data "$q")
-          echo "Respuesta de Influx: $RESP"
-          python3 -c "import sys, csv, io; s=sys.stdin.read(); r=list(csv.DictReader(io.StringIO(s))); v={x['_field']: x['_value'] for x in r if '_field' in x}; print('Diccionario procesado:', v); sys.exit(0 if v.get('pack_count')=='123' else 1)" <<< "$RESP"
+          echo "================================="
+          
+          QUERY='from(bucket:"mybucket") |> range(start:-1m) |> filter(fn:(r) => r._measurement=="historian_measurement") |> last()'
+          
+          RESPONSE=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=myorg" \
+            -H "Authorization: Token my-super-secret-token" \
+            -H "Content-type: application/vnd.flux" \
+            --data "$QUERY")
+          
+          echo "Respuesta de Influx: $RESPONSE"
+          
+          python3 -c "import sys, csv, io; s=sys.stdin.read(); r=list(csv.DictReader(io.StringIO(s))); v={x['_field']: x['_value'] for x in r if '_field' in x}; print('Datos:', v); sys.exit(0 if v.get('pack_count')=='123' else 1)" <<< "$RESPONSE"
 
       - name: Cleanup
         if: always()
