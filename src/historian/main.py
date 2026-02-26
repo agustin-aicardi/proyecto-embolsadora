@@ -44,14 +44,14 @@ def load_tags(path: str) -> Dict[str, Any]:
 
 
 def read_bool(client: ModbusTcpClient, unit: int, address: int) -> bool | None:
-    rr = client.read_coils(address, 1, unit=unit)
+    rr = client.read_coils(address=address, count=1, slave=unit)
     if rr is None or not hasattr(rr, "bits"):
         return None
     return bool_from_bits(rr.bits)
 
 
 def read_int16(client: ModbusTcpClient, unit: int, address: int) -> int | None:
-    rr = client.read_holding_registers(address, 1, unit=unit)
+    rr = client.read_holding_registers(address=address, count=1, slave=unit)
     if rr is None or not hasattr(rr, "registers"):
         return None
     val = rr.registers[0]
@@ -59,7 +59,7 @@ def read_int16(client: ModbusTcpClient, unit: int, address: int) -> int | None:
 
 
 def read_float32(client: ModbusTcpClient, unit: int, address: int, byteorder: str = "big") -> float | None:
-    rr = client.read_holding_registers(address, 2, unit=unit)
+    rr = client.read_holding_registers(address=address, count=2, slave=unit)
     if rr is None or not hasattr(rr, "registers"):
         return None
     hi, lo = rr.registers[0], rr.registers[1]

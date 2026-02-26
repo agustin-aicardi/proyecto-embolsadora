@@ -43,7 +43,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      # ESTO ES CLAVE: QEMU debe estar presente para CORRER la imagen ARM64
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -94,23 +93,36 @@ jobs:
             -e POLL_INTERVAL=1 \
             proyectoembol_app:latest
 
-      - name: Verify Data
+      - name: Wait and verify data
         run: |
-          sleep 20
-          echo "=== DEBUG: LOGS DEL HISTORIAN ==="
-          docker logs historian_ci
-          echo "================================="
+          sleep 15
+          echo "=== HISTORIAN LOGS ==="
+          docker logs historian_ci || true
+          echo ""
+          echo "=== INFLUXDB LOGS ==="
+          docker logs influx_ci || true
+          echo ""
           
-          QUERY='from(bucket:"mybucket") |> range(start:-1m) |> filter(fn:(r) => r._measurement=="historian_measurement") |> last()'
+          QUERY='from(bucket:"mybucket") |> range(start:-10m) |> filter(fn:(r) => r._measurement=="historian_measurement") |> last()'
           
-          RESPONSE=$(curl -s -X POST "http://localhost:8086/api/v2/query?org=myorg" \
+          curl -s -w "\n%{http_code}\n" -X POST "http://localhost:8086/api/v2/query?org=myorg" \
             -H "Authorization: Token my-super-secret-token" \
             -H "Content-type: application/vnd.flux" \
-            --data "$QUERY")
+            --data "$QUERY" > /tmp/result.txt
           
-          echo "Respuesta de Influx: $RESPONSE"
+          HTTP_CODE=$(tail -n1 /tmp/result.txt)
+          echo "HTTP Status: $HTTP_CODE"
           
-          python3 -c "import sys, csv, io; s=sys.stdin.read(); r=list(csv.DictReader(io.StringIO(s))); v={x['_field']: x['_value'] for x in r if '_field' in x}; print('Datos:', v); sys.exit(0 if v.get('pack_count')=='123' else 1)" <<< "$RESPONSE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "ERROR: Got HTTP $HTTP_CODE"
+            cat /tmp/result.txt
+            exit 1
+          fi
+          
+          head -n-1 /tmp/result.txt
+          echo ""
+          
+          python3 ci_verify.py
 
       - name: Cleanup
         if: always()
