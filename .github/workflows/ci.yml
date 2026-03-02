@@ -92,10 +92,6 @@ jobs:
             -e MODBUS_HOST=mock \
             -e POLL_INTERVAL=1 \
             proyectoembol_app:latest
-            -e INFLUX_BUCKET=mybucket \
-            -e MODBUS_HOST=mock \
-            -e POLL_INTERVAL=1 \
-            proyectoembol_app:latest
 
       - name: Wait and verify data
         run: |
