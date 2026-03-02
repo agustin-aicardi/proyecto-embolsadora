@@ -23,4 +23,4 @@ def test_mock_registers():
 
     # filled_weight at address 20 returns two registers
     resp2 = client.read_holding_registers(address=20, count=2, slave=1)
-    assert resp2.registers == [0x3F5C, 0x28F0]  # big-endian float
+    assert resp2.registers == [0x42F6, 0xE979]  # big-endian float for 123.456

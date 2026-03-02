@@ -55,7 +55,8 @@ class MockModbusClient:
             return MockRegistersResponse([123])
         # address 20 => float32 123.456, big-endian split
         if address == 20 and count == 2:
-            # hex 0x3F5C28F0 -> registers [0x3F5C, 0x28F0]
-            return MockRegistersResponse([0x3F5C, 0x28F0])
+              # filled_weight: float32 123.456 in big-endian format
+              # 0x42F6E979 -> registers [0x42F6, 0xE979]
+              return MockRegistersResponse([0x42F6, 0xE979])
         # otherwise return zeros
         return MockRegistersResponse([0] * (count or 1))
