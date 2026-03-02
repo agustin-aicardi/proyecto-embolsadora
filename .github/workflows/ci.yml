@@ -34,8 +34,8 @@ jobs:
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
         run: |
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker tag proyectoembol_app:latest ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
-          docker push ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
+          docker tag proyectoembol_app:latest ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository }}:latest
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
