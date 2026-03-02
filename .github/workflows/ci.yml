@@ -33,7 +33,9 @@ jobs:
       - name: Publish to GHCR
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          # use a PAT if provided, otherwise fall back to GITHUB_TOKEN
+          TOKEN=${{ secrets.CR_PAT || secrets.GITHUB_TOKEN }}
+          echo "$TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
           docker tag proyectoembol_app:latest ghcr.io/${{ github.repository }}:latest
           docker push ghcr.io/${{ github.repository }}:latest
       - name: Upload artifact
