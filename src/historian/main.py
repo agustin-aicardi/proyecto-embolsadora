@@ -67,7 +67,9 @@ def read_float32(client: ModbusTcpClient, unit: int, address: int, byteorder: st
 
 
 def write_point(write_api, bucket: str, org: str, measurement: str, tag_name: str, value: Any, ts: datetime):
-    p = Point(measurement).tag("tag", tag_name).field("value", value).time(ts)
+    # Use the tag name as the field key so each tag stores its own field
+    # (prevents InfluxDB field type conflicts when different tags have different types)
+    p = Point(measurement).tag("tag", tag_name).field(tag_name, value).time(ts)
     write_api.write(bucket=bucket, org=org, record=p)
 
 
