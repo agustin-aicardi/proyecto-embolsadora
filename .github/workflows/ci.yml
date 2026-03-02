@@ -30,6 +30,12 @@ jobs:
         run: docker buildx build --platform linux/arm64 -t proyectoembol_app:latest --load .
       - name: Save image
         run: docker save proyectoembol_app:latest -o proyectoembol_app.tar
+      - name: Publish to GHCR
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          docker tag proyectoembol_app:latest ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
