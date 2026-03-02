@@ -62,12 +62,12 @@ jobs:
       - name: Start InfluxDB
         run: |
           docker run -d --name influx_ci --network ci_net -p 8086:8086 \
-            -e INFLUXDB_INIT_MODE=setup \
-            -e INFLUXDB_INIT_USERNAME=admin \
-            -e INFLUXDB_INIT_PASSWORD=password123 \
-            -e INFLUXDB_INIT_ORG=myorg \
-            -e INFLUXDB_INIT_BUCKET=mybucket \
-            -e INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-token \
+            -e DOCKER_INFLUXDB_INIT_MODE=setup \
+            -e DOCKER_INFLUXDB_INIT_USERNAME=admin \
+            -e DOCKER_INFLUXDB_INIT_PASSWORD=password123 \
+            -e DOCKER_INFLUXDB_INIT_ORG=myorg \
+            -e DOCKER_INFLUXDB_INIT_BUCKET=mybucket \
+            -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=ci-token \
             influxdb:2.6
 
       - name: Wait for InfluxDB
@@ -86,8 +86,12 @@ jobs:
           docker run -d --name historian_ci --network ci_net \
             -v ${{ github.workspace }}/src/historian/tags.yaml:/app/src/historian/tags.yaml:ro \
             -e INFLUX_URL=http://influx_ci:8086 \
-            -e INFLUX_TOKEN=my-super-secret-token \
+            -e INFLUX_TOKEN=ci-token \
             -e INFLUX_ORG=myorg \
+            -e INFLUX_BUCKET=mybucket \
+            -e MODBUS_HOST=mock \
+            -e POLL_INTERVAL=1 \
+            proyectoembol_app:latest
             -e INFLUX_BUCKET=mybucket \
             -e MODBUS_HOST=mock \
             -e POLL_INTERVAL=1 \
@@ -106,7 +110,7 @@ jobs:
           QUERY='from(bucket:"mybucket") |> range(start:-10m) |> filter(fn:(r) => r._measurement=="historian_measurement") |> last()'
           
           curl -s -w "\n%{http_code}\n" -X POST "http://localhost:8086/api/v2/query?org=myorg" \
-            -H "Authorization: Token my-super-secret-token" \
+            -H "Authorization: Token ci-token" \
             -H "Content-type: application/vnd.flux" \
             --data "$QUERY" > /tmp/result.txt
           
