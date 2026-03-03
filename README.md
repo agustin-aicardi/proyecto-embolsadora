@@ -4,7 +4,7 @@ Resumen rápido
 - Servicio `historian` que lee tags definidos en `src/historian/tags.yaml`, consulta un cliente Modbus (o un mock) y escribe puntos en InfluxDB con timestamp preciso.
 
 Lógica principal
-- `tags.yaml` define una lista de tags; cada tag incluye: `name`, `type` (`Bool`, `Int16`, `Float32`), `address` (registro o bobina) y opciones como `word_byteorder` para `Float32`.
+ - `tags.yaml` define una lista de tags; cada tag incluye: `name`, `type` (`bool`, `int16`, `float32`), `address` (registro o bobina) y opciones como `byteorder` para `float32`.
 - El `historian` itera los tags, usa el cliente Modbus (real o `mock` cuando `MODBUS_HOST=mock`) y parsea el resultado con los parsers en `src/historian/parsers.py`.
 - Cada tag se escribe en InfluxDB con su propio campo (clave = nombre del tag) para evitar conflictos de tipo.
 
@@ -34,12 +34,12 @@ Formato y cambio de tags
 - Ejemplo de tag:
 ```yaml
 - name: filled_weight
-  type: Float32
+  type: float32
   address: 20
-  word_byteorder: big
+  byteorder: big
 ```
-- Para añadir un tag nuevo: crea una entrada similar en `tags.yaml` con el `type` correcto. Los tipos soportados actualmente son `Bool`, `Int16`, `Float32`.
-- Si usas `Float32`, ajusta `word_byteorder` (big/little) según cómo la PLC entregue los dos registros de 16 bits.
+ - Para añadir un tag nuevo: crea una entrada similar en `tags.yaml` con el `type` correcto. Los tipos soportados actualmente son `bool`, `int16`, `float32`.
+ - Si usas `float32`, ajusta `byteorder` (big/little) según cómo la PLC entregue los dos registros de 16 bits.
 
 Docker y CI
 - Hay un `Dockerfile` que produce la imagen del `historian` preparada para `linux/arm64` (target Raspberry Pi).
@@ -65,7 +65,11 @@ Publicar la imagen (qué es y cómo hacerlo)
 
 - Automatizar con GitHub Actions: en el workflow puedes añadir un paso que haga `docker buildx build --platform linux/arm64 -t ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest --push .`.
   - Usa el `GITHUB_TOKEN` o un secret `CR_PAT` con permisos para publicar. En repositorios públicos, también asegúrate de habilitar `packages:write` si es necesario.
-
+  > ⚠️ **Permisos especiales de organización**: si tu repositorio pertenece a una organización, puede ocurrir un error similar a:
+  > ```
+  > denied: installation not allowed to Create organization package
+  > ```
+  > En ese caso un administrador debe permitir que los miembros/acciones publiquen paquetes (Settings → Packages del org). Otra solución es generar un PAT (scope `write:packages, read:packages`) y usarlo en lugar de `GITHUB_TOKEN` para loguear y empujar la imagen, o simplemente publicar bajo tu cuenta de usuario en vez de la org.
 Consejos y troubleshooting
 - Si Influx devuelve 401 en CI, suele ser un problema de token/orden de arranque; la CI actual espera a que Influx esté listo antes de escribir.
 - Si Influx devuelve 422: evita escribir diferentes tipos de campo con la misma clave. El `historian` escribe cada tag bajo su propio campo (nombre del tag) para prevenirlo.

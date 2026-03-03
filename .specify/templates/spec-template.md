@@ -90,6 +90,12 @@
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
+### Tag Format (Modbus integrations)
+
+- When the feature involves Modbus tag configuration, document expected tag format here.
+- `type` values MUST be lowercase strings: `bool`, `int16`, `int32`, `float32`.
+- For 32-bit words (floats/int32) include a `byteorder` field with values `big` or `little` to indicate word order.
+
 *Example of marking unclear requirements:*
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]

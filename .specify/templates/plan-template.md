@@ -33,6 +33,10 @@
 
 [Gates determined based on constitution file]
 
+## Modbus Tag Notes
+
+- If this feature reads/writes Modbus registers, ensure tag definitions follow project convention: `type` in lowercase and use `byteorder` for 32-bit words.
+
 ## Project Structure
 
 ### Documentation (this feature)

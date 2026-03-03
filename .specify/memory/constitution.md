@@ -20,8 +20,10 @@ Cualquier operación de red (Modbus TCP o escritura en InfluxDB) debe implementa
 ## Technical Constraints
 
 ### Technology Stack
-- **Runtime**: Python 3.11+
-- **Database**: InfluxDB 2.x (usando `influxdb-client`)
+ El mapeo de tags debe ser dinámico (vía archivo YAML/JSON).
+ Soporte obligatorio para tipos: `bool`, `int16`, `int32` y `float32` (utilizando 2 registros de 16 bits).
+
+Nota: en `src/historian/tags.yaml` los valores de `type` se esperan en minúsculas (ej. `float32`) y la clave para especificar el orden de palabras es `byteorder` (valores: `big` / `little`).
 - **Modbus**: Pymodbus v3+
 - **Orchestration**: Docker Compose V2
 
