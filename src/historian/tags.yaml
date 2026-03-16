@@ -14,3 +14,20 @@ tags:
     address: 20
     unit: 1
     byteorder: "big"  # or "little"
+
+  - name: "temperature"
+    type: "float32"
+    address: 30
+    unit: 1
+    byteorder: "big"
+
+  - name: "pressure"
+    type: "float32"
+    address: 40
+    unit: 1
+    byteorder: "big"
+
+  - name: "cycle_count"
+    type: "int16"
+    address: 50
+    unit: 1
