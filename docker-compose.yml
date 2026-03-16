@@ -1,28 +1,44 @@
-version: "3.8"
 services:
   app:
-    build: .
-    image: proyectoembol_app:latest
+    image: ghcr.io/agustin-aicardi/proyecto-embolsadora:latest
+    container_name: aas_historian_middleware
     restart: unless-stopped
+    working_dir: /app
+    command: python3 -m src.historian.main
     environment:
       - PYTHONUNBUFFERED=1
+      - MODBUS_HOST=plc        # Usamos el contenedor simulador
+      - MODBUS_PORT=502
+      - POLL_INTERVAL=5
+      - INFLUX_URL=http://influxdb:8086
+      - INFLUX_TOKEN=NsOYnjYTJswlFmyQtatUtDosZEgN1Oq_gToLHfjcBNr9w-VePHausBAOtCNS3uf_LRKGVkjXe_v8burMDegArQ==
+      - INFLUX_ORG=org
+      - INFLUX_BUCKET=bucket
+    volumes:
+      - ./src/historian/tags.yaml:/app/src/historian/tags.yaml:ro
     depends_on:
       - influxdb
+      - plc
+    networks:
+      - pe_net
+
+  plc:
+    image: ghcr.io/agustin-aicardi/proyecto-embolsadora:latest
+    container_name: modbus_plc_sim
+    restart: unless-stopped
+    working_dir: /app
+    command: python3 -m src.historian.mock_modbus
     networks:
       - pe_net
 
   influxdb:
     image: influxdb:2.6
+    container_name: proyecto-embolsadora-influxdb-1
     restart: unless-stopped
     ports:
       - "8086:8086"
     volumes:
       - influxdb_data:/var/lib/influxdb2
-    environment:
-      - INFLUXDB_ADMIN_USER=admin
-      - INFLUXDB_ADMIN_PASSWORD=change-me
-      - INFLUXDB_ORG=org
-      - INFLUXDB_BUCKET=bucket
     networks:
       - pe_net
 
@@ -32,7 +48,3 @@ networks:
 
 volumes:
   influxdb_data:
-
-# Notes:
-# - This is a minimal template to satisfy the Constitution (InfluxDB service + app).
-# - For Raspberry Pi (ARM64) ensure base images used in Dockerfile are ARM-compatible (e.g. python:3.11-slim-bookworm).
