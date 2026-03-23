@@ -139,6 +139,8 @@ def main():
                 if value is None:
                     struct_log("warning", "value.missing", tag=name)
                     continue
+                if ttype == "bool":
+                    value = 1 if value else 0
 
                 try:
                     write_point(write_api, influx_bucket, influx_org, "historian_measurement", name, value, cycle_ts)
@@ -158,3 +160,7 @@ def main():
             client.close()
         except Exception:
             pass
+
+
+if __name__ == "__main__":
+    main()

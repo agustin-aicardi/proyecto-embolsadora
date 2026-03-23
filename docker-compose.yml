@@ -1,15 +1,16 @@
 services:
   app:
-    image: ghcr.io/agustin-aicardi/proyecto-embolsadora:latest
+    build: .
+    image: proyecto-embolsadora:dev
     container_name: aas_historian_middleware
     restart: unless-stopped
     working_dir: /app
     command: python3 -m src.historian.main
     environment:
       - PYTHONUNBUFFERED=1
-      - MODBUS_HOST=plc        # Usamos el contenedor simulador
+      - MODBUS_HOST=mock
       - MODBUS_PORT=502
-      - POLL_INTERVAL=5
+      - POLL_INTERVAL=1
       - INFLUX_URL=http://influxdb:8086
       - INFLUX_TOKEN=NsOYnjYTJswlFmyQtatUtDosZEgN1Oq_gToLHfjcBNr9w-VePHausBAOtCNS3uf_LRKGVkjXe_v8burMDegArQ==
       - INFLUX_ORG=org
@@ -18,18 +19,17 @@ services:
       - ./src/historian/tags.yaml:/app/src/historian/tags.yaml:ro
     depends_on:
       - influxdb
-      - plc
     networks:
       - pe_net
 
-  plc:
-    image: ghcr.io/agustin-aicardi/proyecto-embolsadora:latest
-    container_name: modbus_plc_sim
-    restart: unless-stopped
-    working_dir: /app
-    command: python3 -m src.historian.mock_modbus
-    networks:
-      - pe_net
+  #plc:
+  #  image: ghcr.io/agustin-aicardi/proyecto-embolsadora:latest
+  #  container_name: modbus_plc_sim
+  #  restart: unless-stopped
+  #  working_dir: /app
+  #  command: python3 -m src.historian.mock_modbus
+  #  networks:
+  #    - pe_net
 
   influxdb:
     image: influxdb:2.6
@@ -37,6 +37,13 @@ services:
     restart: unless-stopped
     ports:
       - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=org
+      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=NsOYnjYTJswlFmyQtatUtDosZEgN1Oq_gToLHfjcBNr9w-VePHausBAOtCNS3uf_LRKGVkjXe_v8burMDegArQ==
     volumes:
       - influxdb_data:/var/lib/influxdb2
     networks:
