@@ -9,10 +9,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from dotenv import load_dotenv
-from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
 from pymodbus.client import ModbusTcpClient
 
+from .influx_writer import InfluxWriter
 from .modbus_reader import read_tag
 from .tag_loader import load_tags
 
@@ -42,19 +41,6 @@ def struct_log(level: str, msg: str, **fields: Any) -> None:
     LOG.log(getattr(logging, level.upper(), logging.INFO), json.dumps(payload))
 
 
-def write_point(
-    write_api,
-    bucket: str,
-    org: str,
-    measurement: str,
-    tag_name: str,
-    value: Any,
-    ts: datetime,
-) -> None:
-    p = Point(measurement).tag("tag", tag_name).field(tag_name, value).time(ts)
-    write_api.write(bucket=bucket, org=org, record=p)
-
-
 def main() -> None:
     cfg_path = os.environ.get("HISTORIAN_TAGS", "./tags.yaml")
     modbus_host = os.environ.get("MODBUS_HOST", "plc")
@@ -68,8 +54,12 @@ def main() -> None:
 
     tags = load_tags(cfg_path)
 
-    client = InfluxDBClient(url=influx_url, token=influx_token, org=influx_org)
-    write_api = client.write_api(write_options=SYNCHRONOUS)
+    influx_writer = InfluxWriter(
+        url=influx_url,
+        token=influx_token,
+        org=influx_org,
+        bucket=influx_bucket,
+    )
 
     struct_log(
         "info",
@@ -129,14 +119,11 @@ def main() -> None:
                     value = 1 if value else 0
 
                 try:
-                    write_point(
-                        write_api,
-                        influx_bucket,
-                        influx_org,
-                        "historian_measurement",
-                        tag.name,
-                        value,
-                        cycle_ts,
+                    influx_writer.write_value(
+                        measurement="historian_measurement",
+                        tag_name=tag.name,
+                        value=value,
+                        ts=cycle_ts,
                     )
                     struct_log("info", "point.written", tag=tag.name, value=value)
                 except Exception as ex:
@@ -152,7 +139,7 @@ def main() -> None:
         except Exception:
             pass
         try:
-            client.close()
+            influx_writer.close()
         except Exception:
             pass
 
