@@ -14,11 +14,13 @@ from pymodbus.client import ModbusTcpClient
 from .influx_writer import InfluxWriter
 from .modbus_reader import read_tag
 from .tag_loader import load_tags
+from .aas_updater import AASUpdater
 
 try:
     from .mock_modbus import MockModbusClient
 except Exception:
     MockModbusClient = None
+
 
 
 load_dotenv()
@@ -52,6 +54,10 @@ def main() -> None:
     influx_org = os.environ.get("INFLUX_ORG", "org")
     influx_bucket = os.environ.get("INFLUX_BUCKET", "bucket")
 
+    aas_xml_path = os.environ.get("AAS_XML_PATH")
+    aas_mapping_path = os.environ.get("AAS_MAPPING_PATH")
+    aas_output_path = os.environ.get("AAS_OUTPUT_PATH")
+
     tags = load_tags(cfg_path)
 
     influx_writer = InfluxWriter(
@@ -60,6 +66,14 @@ def main() -> None:
         org=influx_org,
         bucket=influx_bucket,
     )
+
+    aas_updater = None
+    if aas_xml_path and aas_mapping_path and aas_output_path:
+        aas_updater = AASUpdater(
+            aas_xml_path=aas_xml_path,
+            mapping_path=aas_mapping_path,
+        )
+        struct_log("info", "aas.updater_initialized", output_path=aas_output_path)
 
     struct_log(
         "info",
@@ -91,6 +105,7 @@ def main() -> None:
     try:
         while True:
             cycle_ts = datetime.now(timezone.utc)
+            cycle_values = {}
 
             for tag in tags:
                 attempts = 0
@@ -126,10 +141,23 @@ def main() -> None:
                         ts=cycle_ts,
                     )
                     struct_log("info", "point.written", tag=tag.name, value=value)
+                    cycle_values[tag.name] = value
                 except Exception as ex:
                     struct_log("error", "influx.write_failed", tag=tag.name, error=str(ex))
-
+            if aas_updater is not None and cycle_values:
+                try:
+                    updated_tags = aas_updater.update_from_dict(cycle_values)
+                    aas_updater.save(aas_output_path)
+                    struct_log(
+                        "info",
+                        "aas.updated",
+                        updated_tags=updated_tags,
+                        output_path=aas_output_path,
+                    )
+                except Exception as ex:
+                    struct_log("error", "aas.update_failed", error=str(ex))
             time.sleep(poll_interval)
+
 
     except KeyboardInterrupt:
         struct_log("info", "historian.stopped")

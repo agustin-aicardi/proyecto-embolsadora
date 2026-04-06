@@ -15,8 +15,15 @@ services:
       - INFLUX_TOKEN=NsOYnjYTJswlFmyQtatUtDosZEgN1Oq_gToLHfjcBNr9w-VePHausBAOtCNS3uf_LRKGVkjXe_v8burMDegArQ==
       - INFLUX_ORG=org
       - INFLUX_BUCKET=bucket
+      - AAS_XML_PATH=/app/Embolsadora_V3.xml
+      - AAS_MAPPING_PATH=/app/src/historian/aas_mapping.yaml
+      - AAS_OUTPUT_PATH=/app/runtime/Embolsadora_runtime.xml
     volumes:
       - ./src/historian/tags.yaml:/app/src/historian/tags.yaml:ro
+      - ./src/historian/tags.yaml:/app/src/historian/tags.yaml:ro
+      - ./src/historian/aas_mapping.yaml:/app/src/historian/aas_mapping.yaml:ro
+      - ./Embolsadora_V3.xml:/app/Embolsadora_V3.xml:ro
+      - ./runtime:/app/runtime
     depends_on:
       - influxdb
     networks:

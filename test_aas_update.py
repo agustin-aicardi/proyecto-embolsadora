@@ -1,7 +1,7 @@
 from src.historian.aas_updater import AASUpdater
 
 values = {
-    "filled_weight": 90.7,
+    "filled_weight": 8.7,
     "pack_count": 125,
     "cycle_count": 980,
     "conveyor_running": 1,
