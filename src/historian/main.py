@@ -22,7 +22,6 @@ except Exception:
     MockModbusClient = None
 
 
-
 load_dotenv()
 
 LOG = logging.getLogger("historian")
@@ -72,8 +71,15 @@ def main() -> None:
         aas_updater = AASUpdater(
             aas_xml_path=aas_xml_path,
             mapping_path=aas_mapping_path,
+            tags_path=cfg_path,
         )
-        struct_log("info", "aas.updater_initialized", output_path=aas_output_path)
+        struct_log(
+            "info",
+            "aas.updater_initialized",
+            output_path=aas_output_path,
+            mapping_path=aas_mapping_path,
+            tags_path=cfg_path,
+        )
 
     struct_log(
         "info",
@@ -85,14 +91,21 @@ def main() -> None:
 
     if modbus_host == "mock" and MockModbusClient is not None:
         mb_client = MockModbusClient(host=modbus_host, port=modbus_port)
+        source_name = "mock_modbus"
         struct_log("info", "modbus.using_mock")
     else:
         mb_client = ModbusTcpClient(host=modbus_host, port=modbus_port)
+        source_name = "modbus_tcp"
 
     try:
         connected = mb_client.connect()
         if not connected:
-            struct_log("warning", "modbus.connect_failed", host=modbus_host, port=modbus_port)
+            struct_log(
+                "warning",
+                "modbus.connect_failed",
+                host=modbus_host,
+                port=modbus_port,
+            )
     except Exception as ex:
         struct_log(
             "warning",
@@ -105,15 +118,17 @@ def main() -> None:
     try:
         while True:
             cycle_ts = datetime.now(timezone.utc)
-            cycle_values = {}
+            cycle_values: dict[str, dict[str, Any]] = {}
 
             for tag in tags:
                 attempts = 0
                 value = None
+                quality = "BAD"
 
                 while attempts < 3:
                     try:
                         value = read_tag(mb_client, tag)
+                        quality = "GOOD"
                         break
                     except Exception as ex:
                         attempts += 1
@@ -127,11 +142,28 @@ def main() -> None:
                         time.sleep(5)
 
                 if value is None:
+                    cycle_values[tag.name] = {
+                        "value": None,
+                        "timestamp": cycle_ts.isoformat(),
+                        "quality": "BAD",
+                        "source": source_name,
+                        "attempts": attempts,
+                    }
                     struct_log("warning", "value.missing", tag=tag.name)
                     continue
 
+                # Mantengo compatibilidad con el comportamiento anterior:
+                # los bool se escriben a Influx y AAS como 1/0.
                 if tag.type == "bool":
                     value = 1 if value else 0
+
+                cycle_values[tag.name] = {
+                    "value": value,
+                    "timestamp": cycle_ts.isoformat(),
+                    "quality": quality,
+                    "source": source_name,
+                    "attempts": attempts,
+                }
 
                 try:
                     influx_writer.write_value(
@@ -140,24 +172,52 @@ def main() -> None:
                         value=value,
                         ts=cycle_ts,
                     )
-                    struct_log("info", "point.written", tag=tag.name, value=value)
-                    cycle_values[tag.name] = value
-                except Exception as ex:
-                    struct_log("error", "influx.write_failed", tag=tag.name, error=str(ex))
-            if aas_updater is not None and cycle_values:
-                try:
-                    updated_tags = aas_updater.update_from_dict(cycle_values)
-                    aas_updater.save(aas_output_path)
                     struct_log(
                         "info",
-                        "aas.updated",
-                        updated_tags=updated_tags,
-                        output_path=aas_output_path,
+                        "point.written",
+                        tag=tag.name,
+                        value=value,
+                        quality=quality,
+                        source=source_name,
                     )
                 except Exception as ex:
-                    struct_log("error", "aas.update_failed", error=str(ex))
-            time.sleep(poll_interval)
+                    cycle_values[tag.name]["quality"] = "INFLUX_WRITE_FAILED"
+                    struct_log(
+                        "error",
+                        "influx.write_failed",
+                        tag=tag.name,
+                        error=str(ex),
+                    )
 
+            if aas_updater is not None:
+                aas_values = {
+                    tag_name: meta["value"]
+                    for tag_name, meta in cycle_values.items()
+                    if meta["value"] is not None and meta["quality"] == "GOOD"
+                }
+
+                if aas_values:
+                    try:
+                        updated_tags = aas_updater.update_from_dict(aas_values)
+                        aas_updater.save(aas_output_path)
+                        struct_log(
+                            "info",
+                            "aas.updated",
+                            updated_tags=updated_tags,
+                            output_path=aas_output_path,
+                        )
+                    except Exception as ex:
+                        struct_log("error", "aas.update_failed", error=str(ex))
+
+            struct_log(
+                "info",
+                "cycle.completed",
+                tags_total=len(tags),
+                tags_ok=len([v for v in cycle_values.values() if v["quality"] == "GOOD"]),
+                tags_bad=len([v for v in cycle_values.values() if v["quality"] != "GOOD"]),
+            )
+
+            time.sleep(poll_interval)
 
     except KeyboardInterrupt:
         struct_log("info", "historian.stopped")

@@ -1,34 +1,97 @@
 mappings:
-  - tag: filled_weight
-    submodel: Operativos
-    collection: Pesada
-    property: peso
+  - tag: peso_actual
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: peso
+    data:
+      value_type: xs:float
+      unit: kg
+      default: 0.0
+    semantics:
+      description: Peso actual medido en la estación de pesada
+      class: runtime
 
-  - tag: pack_count
-    submodel: Operativos
-    collection: Pesada
-    property: cantidadPesadas
+  - tag: cantidad_pesadas
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: cantidadPesadas
+    data:
+      value_type: xs:int
+      unit: count
+      default: 0
+    semantics:
+      description: Cantidad acumulada de pesadas realizadas
+      class: runtime
 
-  - tag: cycle_count
-    submodel: Operativos
-    collection: Produccion
-    property: cantidadLlenadas
+  - tag: estado_pesada
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: estado
+    data:
+      value_type: xs:boolean
+      unit: null
+      default: false
+    semantics:
+      description: Estado actual del proceso de pesada
+      class: runtime
 
-  - tag: conveyor_running
-    submodel: Operativos
-    collection: Pesada
-    property: estado
+  - tag: tiempo_ciclo_actual
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Produccion
+      property: tiempoCicloActual
+    data:
+      value_type: xs:float
+      unit: s
+      default: 0.0
+    semantics:
+      description: Tiempo actual de ciclo de producción
+      class: runtime
 
-  - tag: pressure
-    submodel: Operativos
-    collection: Produccion
-    property: consumoElectrico
+  - tag: consumo_electrico
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Produccion
+      property: consumoElectrico
+    data:
+      value_type: xs:float
+      unit: kWh
+      default: 0.0
+    semantics:
+      description: Consumo eléctrico asociado a la operación actual
+      class: runtime
 
-  - tag: temperature
-    submodel: Operativos
-    collection: Produccion
-    property: tiempoCicloActual
+  - tag: cantidad_llenadas
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Produccion
+      property: cantidadLlenadas
+    data:
+      value_type: xs:int
+      unit: count
+      default: 0
+    semantics:
+      description: Cantidad acumulada de ciclos de llenado
+      class: runtime
 
-  - tag: emergency_stop
-    submodel: Alarmas
-    property: paradaEmergencia
+  - tag: parada_emergencia
+    enabled: true
+    aas:
+      submodel: Alarmas
+      property: paradaEmergencia
+    data:
+      value_type: xs:boolean
+      unit: null
+      default: false
+    semantics:
+      description: Indica si la parada de emergencia se encuentra activa
+      class: alarm

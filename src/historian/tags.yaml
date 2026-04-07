@@ -1,33 +1,38 @@
 tags:
-  - name: "conveyor_running"
-    type: "bool"
-    address: 0
+  - name: "peso_actual"
+    type: "float32"
+    address: 20
     unit: 1
+    byteorder: "big"
 
-  - name: "pack_count"
+  - name: "cantidad_pesadas"
     type: "int16"
     address: 10
     unit: 1
 
-  - name: "filled_weight"
-    type: "float32"
-    address: 20
+  - name: "estado_pesada"
+    type: "bool"
+    address: 0
     unit: 1
-    byteorder: "big"  # or "little"
 
-  - name: "temperature"
+  - name: "tiempo_ciclo_actual"
     type: "float32"
     address: 30
     unit: 1
     byteorder: "big"
 
-  - name: "pressure"
+  - name: "consumo_electrico"
     type: "float32"
     address: 40
     unit: 1
     byteorder: "big"
 
-  - name: "cycle_count"
+  - name: "cantidad_llenadas"
     type: "int16"
     address: 50
+    unit: 1
+
+  - name: "parada_emergencia"
+    type: "bool"
+    address: 1
     unit: 1

@@ -570,7 +570,7 @@
             <ns0:property>
               <ns0:idShort>peso</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>50.10896682739258</ns0:value></ns0:property>
+            <ns0:value>49.85215759277344</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>numeroTicket</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -582,7 +582,7 @@
             <ns0:property>
               <ns0:idShort>cantidadPesadas</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>765</ns0:value></ns0:property>
+            <ns0:value>293</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>pesoNeto</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -623,7 +623,7 @@
             <ns0:property>
               <ns0:idShort>tiempoCicloActual</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>23.633451461791992</ns0:value></ns0:property>
+            <ns0:value>28.997760772705078</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>tiempoPreparacion</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -635,7 +635,7 @@
             <ns0:property>
               <ns0:idShort>cantidadLlenadas</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>18070</ns0:value></ns0:property>
+            <ns0:value>-31238</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>horasProduccion</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -683,7 +683,7 @@
             <ns0:property>
               <ns0:idShort>consumoElectrico</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>1.0647255182266235</ns0:value></ns0:property>
+            <ns0:value>1.3105236291885376</ns0:value></ns0:property>
           </ns0:value>
         </ns0:submodelElementCollection>
       </ns0:submodelElements>
@@ -724,7 +724,7 @@
         <ns0:property>
           <ns0:idShort>paradaEmergencia</ns0:idShort>
           <ns0:valueType>xs:string</ns0:valueType>
-        </ns0:property>
+        <ns0:value>0</ns0:value></ns0:property>
       </ns0:submodelElements>
     </ns0:submodel>
   </ns0:submodels>

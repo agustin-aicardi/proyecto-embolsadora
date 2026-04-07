@@ -570,7 +570,7 @@
             <ns0:property>
               <ns0:idShort>peso</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>90.7</ns0:value></ns0:property>
+            <ns0:value>30.4</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>numeroTicket</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -598,7 +598,7 @@
             <ns0:property>
               <ns0:idShort>estado</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>1</ns0:value></ns0:property>
+            <ns0:value>true</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>numeroReceta</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -623,7 +623,7 @@
             <ns0:property>
               <ns0:idShort>tiempoCicloActual</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>26.5</ns0:value></ns0:property>
+            <ns0:value>2.35</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>tiempoPreparacion</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -724,7 +724,7 @@
         <ns0:property>
           <ns0:idShort>paradaEmergencia</ns0:idShort>
           <ns0:valueType>xs:string</ns0:valueType>
-        <ns0:value>0</ns0:value></ns0:property>
+        <ns0:value>false</ns0:value></ns0:property>
       </ns0:submodelElements>
     </ns0:submodel>
   </ns0:submodels>
