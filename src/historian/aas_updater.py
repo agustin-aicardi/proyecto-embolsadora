@@ -21,7 +21,9 @@ class AASUpdater:
         with open(self.mapping_path, "r", encoding="utf-8") as f:
             mapping_doc = yaml.safe_load(f) or {}
 
+        self.defaults = mapping_doc.get("defaults", {})
         self.mappings = mapping_doc.get("mappings", [])
+
         self.index = self._build_index()
         self.tag_names = self._load_tag_names() if self.tags_path else None
 
@@ -30,7 +32,7 @@ class AASUpdater:
         self._validate_duplicate_targets()
 
         if self.tag_names is not None:
-            self._validate_mapping_tags_exist()
+            self._validate_mapping_names_exist()
             self._validate_duplicate_tag_names()
 
         print(f"AAS index built with {len(self.index)} properties")
@@ -109,25 +111,25 @@ class AASUpdater:
             if not isinstance(mapping, dict):
                 raise ValueError(f"Mapping entry at index {i} must be a dictionary.")
 
-            tag = mapping.get("tag")
-            if not tag:
-                raise ValueError(f"Mapping entry at index {i} is missing required field 'tag'.")
+            name = mapping.get("name")
+            if not name:
+                raise ValueError(f"Mapping entry at index {i} is missing required field 'name'.")
 
             enabled = mapping.get("enabled", True)
             if not isinstance(enabled, bool):
-                raise ValueError(f"Mapping '{tag}': field 'enabled' must be boolean.")
+                raise ValueError(f"Mapping '{name}': field 'enabled' must be boolean.")
 
             aas = mapping.get("aas")
             if not isinstance(aas, dict):
-                raise ValueError(f"Mapping '{tag}': field 'aas' must be a dictionary.")
+                raise ValueError(f"Mapping '{name}': field 'aas' must be a dictionary.")
 
             submodel = aas.get("submodel")
             prop = aas.get("property")
 
             if not submodel:
-                raise ValueError(f"Mapping '{tag}': missing 'aas.submodel'.")
+                raise ValueError(f"Mapping '{name}': missing 'aas.submodel'.")
             if not prop:
-                raise ValueError(f"Mapping '{tag}': missing 'aas.property'.")
+                raise ValueError(f"Mapping '{name}': missing 'aas.property'.")
 
     def _validate_mapping_targets(self) -> None:
         missing_targets: list[str] = []
@@ -136,7 +138,7 @@ class AASUpdater:
             if not mapping.get("enabled", True):
                 continue
 
-            tag = mapping["tag"]
+            name = mapping["name"]
             aas = mapping["aas"]
 
             key = (
@@ -147,7 +149,7 @@ class AASUpdater:
 
             if key not in self.index:
                 missing_targets.append(
-                    f"tag='{tag}' -> submodel='{aas['submodel']}', "
+                    f"name='{name}' -> submodel='{aas['submodel']}', "
                     f"collection='{aas.get('collection')}', property='{aas['property']}'"
                 )
 
@@ -163,7 +165,7 @@ class AASUpdater:
             if not mapping.get("enabled", True):
                 continue
 
-            tag = mapping["tag"]
+            name = mapping["name"]
             aas = mapping["aas"]
 
             key = (
@@ -174,17 +176,17 @@ class AASUpdater:
 
             if key in seen:
                 duplicates.append(
-                    f"target {key} is assigned to both '{seen[key]}' and '{tag}'"
+                    f"target {key} is assigned to both '{seen[key]}' and '{name}'"
                 )
             else:
-                seen[key] = tag
+                seen[key] = name
 
         if duplicates:
             detail = "\n".join(duplicates)
             raise ValueError(f"Duplicate AAS targets found in mapping:\n{detail}")
 
-    def _validate_mapping_tags_exist(self) -> None:
-        missing_tags: list[str] = []
+    def _validate_mapping_names_exist(self) -> None:
+        missing_names: list[str] = []
 
         assert self.tag_names is not None
 
@@ -192,13 +194,13 @@ class AASUpdater:
             if not mapping.get("enabled", True):
                 continue
 
-            tag = mapping["tag"]
-            if tag not in self.tag_names:
-                missing_tags.append(tag)
+            name = mapping["name"]
+            if name not in self.tag_names:
+                missing_names.append(name)
 
-        if missing_tags:
-            detail = "\n".join(sorted(missing_tags))
-            raise ValueError(f"The following mapping tags do not exist in tags.yaml:\n{detail}")
+        if missing_names:
+            detail = "\n".join(sorted(missing_names))
+            raise ValueError(f"The following mapping names do not exist in tags.yaml:\n{detail}")
 
     def _validate_duplicate_tag_names(self) -> None:
         assert self.tag_names is not None
@@ -232,9 +234,9 @@ class AASUpdater:
             if not mapping.get("enabled", True):
                 continue
 
-            tag_name = mapping["tag"]
+            name = mapping["name"]
 
-            if tag_name not in values:
+            if name not in values:
                 continue
 
             aas = mapping["aas"]
@@ -248,8 +250,8 @@ class AASUpdater:
             if target_prop is None:
                 continue
 
-            self._set_property_value(target_prop, values[tag_name])
-            updated.append(tag_name)
+            self._set_property_value(target_prop, values[name])
+            updated.append(name)
 
         return updated
 

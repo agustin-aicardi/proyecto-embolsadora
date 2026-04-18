@@ -1,97 +1,344 @@
+defaults:
+  historian:
+    enabled: true
+    bucket: bucket
+    measurement: historian_semantic
+
 mappings:
-  - tag: peso_actual
+  - name: peso
     enabled: true
     aas:
       submodel: Operativos
       collection: Pesada
       property: peso
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: peso
     data:
       value_type: xs:float
       unit: kg
       default: 0.0
     semantics:
-      description: Peso actual medido en la estación de pesada
+      description: Peso actual de la pesada
       class: runtime
 
-  - tag: cantidad_pesadas
+  - name: pesoBruto
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: pesoBruto
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: pesoBruto
+    data:
+      value_type: xs:float
+      unit: kg
+      default: 0.0
+    semantics:
+      description: Peso bruto actual
+      class: runtime
+
+  - name: pesoNeto
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: pesoNeto
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: pesoNeto
+    data:
+      value_type: xs:float
+      unit: kg
+      default: 0.0
+    semantics:
+      description: Peso neto calculado
+      class: runtime
+
+  - name: pesoTotal
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: pesoTotal
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: pesoTotal
+    data:
+      value_type: xs:float
+      unit: kg
+      default: 0.0
+    semantics:
+      description: Peso total acumulado
+      class: runtime
+
+  - name: Tara
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: Tara
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: Tara
+    data:
+      value_type: xs:float
+      unit: kg
+      default: 1.0
+    semantics:
+      description: Tara de la bolsa
+      class: runtime
+
+  - name: cantidadPesadas
     enabled: true
     aas:
       submodel: Operativos
       collection: Pesada
       property: cantidadPesadas
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: cantidadPesadas
     data:
       value_type: xs:int
       unit: count
       default: 0
     semantics:
-      description: Cantidad acumulada de pesadas realizadas
+      description: Cantidad de pesadas realizadas
       class: runtime
 
-  - tag: estado_pesada
+  - name: estado
     enabled: true
     aas:
       submodel: Operativos
       collection: Pesada
       property: estado
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: estado
     data:
       value_type: xs:boolean
       unit: null
       default: false
     semantics:
-      description: Estado actual del proceso de pesada
+      description: Estado actual de la pesada
       class: runtime
 
-  - tag: tiempo_ciclo_actual
+  - name: hora
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: hora
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: hora
+    data:
+      value_type: xs:int
+      unit: HHMMSS
+      default: 0
+    semantics:
+      description: Hora actual del sistema
+      class: runtime
+
+  - name: fecha
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Pesada
+      property: fecha
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Pesada
+        aas_property: fecha
+    data:
+      value_type: xs:int
+      unit: YYYYMMDD
+      default: 0
+    semantics:
+      description: Fecha actual del sistema
+      class: runtime
+
+  - name: tiempoCiclo
     enabled: true
     aas:
       submodel: Operativos
       collection: Produccion
-      property: tiempoCicloActual
+      property: tiempoCiclo
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Produccion
+        aas_property: tiempoCiclo
     data:
       value_type: xs:float
       unit: s
       default: 0.0
     semantics:
-      description: Tiempo actual de ciclo de producción
+      description: Tiempo de ciclo promedio
       class: runtime
 
-  - tag: consumo_electrico
+  - name: tiempoCicloActual
     enabled: true
     aas:
       submodel: Operativos
       collection: Produccion
-      property: consumoElectrico
+      property: tiempoCicloActual
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Produccion
+        aas_property: tiempoCicloActual
     data:
       value_type: xs:float
-      unit: kWh
+      unit: s
       default: 0.0
     semantics:
-      description: Consumo eléctrico asociado a la operación actual
+      description: Tiempo de ciclo actual
       class: runtime
 
-  - tag: cantidad_llenadas
+  - name: tiempoPreparacion
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Produccion
+      property: tiempoPreparacion
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Produccion
+        aas_property: tiempoPreparacion
+    data:
+      value_type: xs:float
+      unit: s
+      default: 0.0
+    semantics:
+      description: Tiempo de preparación
+      class: runtime
+
+  - name: tiempoLlenado
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Produccion
+      property: tiempoLlenado
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Produccion
+        aas_property: tiempoLlenado
+    data:
+      value_type: xs:float
+      unit: s
+      default: 0.0
+    semantics:
+      description: Tiempo de llenado
+      class: runtime
+
+  - name: cantidadLlenadas
     enabled: true
     aas:
       submodel: Operativos
       collection: Produccion
       property: cantidadLlenadas
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Produccion
+        aas_property: cantidadLlenadas
     data:
       value_type: xs:int
       unit: count
       default: 0
     semantics:
-      description: Cantidad acumulada de ciclos de llenado
+      description: Cantidad de llenadas del lote
       class: runtime
 
-  - tag: parada_emergencia
+  - name: horasProduccion
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Produccion
+      property: horasProduccion
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Produccion
+        aas_property: horasProduccion
+    data:
+      value_type: xs:float
+      unit: h
+      default: 0.0
+    semantics:
+      description: Horas acumuladas de producción
+      class: runtime
+
+  - name: consumoElectrico
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Produccion
+      property: consumoElectrico
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Produccion
+        aas_property: consumoElectrico
+    data:
+      value_type: xs:float
+      unit: kWh
+      default: 0.0
+    semantics:
+      description: Consumo eléctrico
+      class: runtime
+
+  - name: alimentacionTolva
     enabled: true
     aas:
       submodel: Alarmas
-      property: paradaEmergencia
+      property: alimentacionTolva
+    historian:
+      tags:
+        aas_submodel: Alarmas
+        aas_property: alimentacionTolva
     data:
       value_type: xs:boolean
       unit: null
       default: false
     semantics:
-      description: Indica si la parada de emergencia se encuentra activa
+      description: Alarma de alimentación de tolva
+      class: alarm
+
+  - name: paradaEmergencia
+    enabled: true
+    aas:
+      submodel: Alarmas
+      property: paradaEmergencia
+    historian:
+      tags:
+        aas_submodel: Alarmas
+        aas_property: paradaEmergencia
+    data:
+      value_type: xs:boolean
+      unit: null
+      default: false
+    semantics:
+      description: Parada de emergencia activa
       class: alarm

@@ -1,38 +1,101 @@
 tags:
-  - name: "peso_actual"
-    type: "float32"
+  - name: peso
     address: 20
+    type: float32
     unit: 1
-    byteorder: "big"
+    byteorder: big
 
-  - name: "cantidad_pesadas"
-    type: "int16"
+  - name: pesoBruto
+    address: 20
+    type: float32
+    unit: 1
+    byteorder: big
+
+  - name: pesoNeto
+    address: 70
+    type: float32
+    unit: 1
+    byteorder: big
+
+  - name: pesoTotal
+    address: 80
+    type: float32
+    unit: 1
+    byteorder: big
+
+  - name: Tara
+    address: 60
+    type: float32
+    unit: 1
+    byteorder: big
+
+  - name: cantidadPesadas
     address: 10
+    type: int16
     unit: 1
 
-  - name: "estado_pesada"
-    type: "bool"
+  - name: estado
     address: 0
+    type: bool
     unit: 1
 
-  - name: "tiempo_ciclo_actual"
-    type: "float32"
+  - name: hora
+    address: 130
+    type: int16
+    unit: 1
+
+  - name: fecha
+    address: 140
+    type: int16
+    unit: 1
+
+  - name: tiempoCiclo
+    address: 110
+    type: float32
+    unit: 1
+    byteorder: big
+
+  - name: tiempoCicloActual
     address: 30
+    type: float32
     unit: 1
-    byteorder: "big"
+    byteorder: big
 
-  - name: "consumo_electrico"
-    type: "float32"
-    address: 40
+  - name: tiempoPreparacion
+    address: 90
+    type: float32
     unit: 1
-    byteorder: "big"
+    byteorder: big
 
-  - name: "cantidad_llenadas"
-    type: "int16"
+  - name: tiempoLlenado
+    address: 100
+    type: float32
+    unit: 1
+    byteorder: big
+
+  - name: cantidadLlenadas
     address: 50
+    type: int16
     unit: 1
 
-  - name: "parada_emergencia"
-    type: "bool"
+  - name: horasProduccion
+    address: 120
+    type: float32
+    unit: 1
+    byteorder: big
+
+  - name: consumoElectrico
+    address: 40
+    type: float32
+    unit: 1
+    byteorder: big
+
+  - name: alimentacionTolva
+    address: 2
+    type: bool
+    unit: 1
+
+  - name: paradaEmergencia
     address: 1
+    type: bool
     unit: 1

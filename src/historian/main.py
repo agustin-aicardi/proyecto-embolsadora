@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+import yaml
 from dotenv import load_dotenv
 from pymodbus.client import ModbusTcpClient
 
@@ -42,6 +43,35 @@ def struct_log(level: str, msg: str, **fields: Any) -> None:
     LOG.log(getattr(logging, level.upper(), logging.INFO), json.dumps(payload))
 
 
+def load_mapping(path: str) -> dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def build_mapping_index(mapping_doc: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    mappings = mapping_doc.get("mappings", [])
+    index: dict[str, dict[str, Any]] = {}
+
+    for entry in mappings:
+        if not entry.get("enabled", True):
+            continue
+        name = entry["name"]
+        index[name] = entry
+
+    return index
+
+
+def build_historian_config(mapping_doc: dict[str, Any], entry: dict[str, Any]) -> tuple[str, dict[str, str]]:
+    defaults = mapping_doc.get("defaults", {})
+    default_historian = defaults.get("historian", {})
+    historian = entry.get("historian", {})
+
+    measurement = historian.get("measurement", default_historian.get("measurement", "historian_semantic"))
+    tags = historian.get("tags", {})
+
+    return measurement, tags
+
+
 def main() -> None:
     cfg_path = os.environ.get("HISTORIAN_TAGS", "./tags.yaml")
     modbus_host = os.environ.get("MODBUS_HOST", "plc")
@@ -58,6 +88,13 @@ def main() -> None:
     aas_output_path = os.environ.get("AAS_OUTPUT_PATH")
 
     tags = load_tags(cfg_path)
+
+    mapping_doc: dict[str, Any] = {}
+    mapping_index: dict[str, dict[str, Any]] = {}
+
+    if aas_mapping_path:
+        mapping_doc = load_mapping(aas_mapping_path)
+        mapping_index = build_mapping_index(mapping_doc)
 
     influx_writer = InfluxWriter(
         url=influx_url,
@@ -152,11 +189,6 @@ def main() -> None:
                     struct_log("warning", "value.missing", tag=tag.name)
                     continue
 
-                # Mantengo compatibilidad con el comportamiento anterior:
-                # los bool se escriben a Influx y AAS como 1/0.
-                if tag.type == "bool":
-                    value = 1 if value else 0
-
                 cycle_values[tag.name] = {
                     "value": value,
                     "timestamp": cycle_ts.isoformat(),
@@ -165,17 +197,28 @@ def main() -> None:
                     "attempts": attempts,
                 }
 
+                mapping_entry = mapping_index.get(tag.name)
+                if mapping_entry is None:
+                    struct_log("warning", "mapping.missing_for_tag", tag=tag.name)
+                    continue
+
+                measurement, historian_tags = build_historian_config(mapping_doc, mapping_entry)
+                field_name = mapping_entry["name"]
+
                 try:
                     influx_writer.write_value(
-                        measurement="historian_measurement",
-                        tag_name=tag.name,
+                        measurement=measurement,
+                        field_name=field_name,
                         value=value,
                         ts=cycle_ts,
+                        tags=historian_tags,
                     )
                     struct_log(
                         "info",
                         "point.written",
                         tag=tag.name,
+                        measurement=measurement,
+                        field=field_name,
                         value=value,
                         quality=quality,
                         source=source_name,

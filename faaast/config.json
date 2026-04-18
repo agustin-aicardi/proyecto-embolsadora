@@ -1,0 +1,21 @@
+{
+  "core": {
+    "requestHandlerThreadPoolSize": 2
+  },
+  "endpoints": [
+    {
+      "@class": "de.fraunhofer.iosb.ilt.faaast.service.endpoint.http.HttpEndpoint",
+      "port": 8081
+    }
+  ],
+  "persistence": {
+    "@class": "de.fraunhofer.iosb.ilt.faaast.service.persistence.file.PersistenceFile",
+    "initialModelFile": "/app/model/runtime/Embolsadora_runtime.xml",
+    "dataDir": "/app/faaast-data",
+    "keepInitial": true,
+    "dataformat": "XML"
+  },
+  "messageBus": {
+    "@class": "de.fraunhofer.iosb.ilt.faaast.service.messagebus.internal.MessageBusInternal"
+  }
+}

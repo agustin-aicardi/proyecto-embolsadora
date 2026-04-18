@@ -12,7 +12,7 @@ services:
       - MODBUS_PORT=502
       - POLL_INTERVAL=1
       - INFLUX_URL=http://influxdb:8086
-      - INFLUX_TOKEN=NsOYnjYTJswlFmyQtatUtDosZEgN1Oq_gToLHfjcBNr9w-VePHausBAOtCNS3uf_LRKGVkjXe_v8burMDegArQ==
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
       - INFLUX_ORG=org
       - INFLUX_BUCKET=bucket
       - AAS_XML_PATH=/app/Embolsadora_V3.xml
@@ -50,9 +50,24 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
       - DOCKER_INFLUXDB_INIT_ORG=org
       - DOCKER_INFLUXDB_INIT_BUCKET=bucket
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=NsOYnjYTJswlFmyQtatUtDosZEgN1Oq_gToLHfjcBNr9w-VePHausBAOtCNS3uf_LRKGVkjXe_v8burMDegArQ==
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
     volumes:
       - influxdb_data:/var/lib/influxdb2
+    networks:
+      - pe_net
+
+  faaast:
+    image: fraunhoferiosb/faaast-service:latest
+    container_name: faaast_service
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./faaast/config.json:/app/config/config.json:ro
+      - ./:/app/model
+      - ./faaast/data:/app/faaast-data
+    command: ["-c", "/app/config/config.json"]
+    depends_on:
+      - app
     networks:
       - pe_net
 
