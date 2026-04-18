@@ -1,0 +1,324 @@
+[
+  {
+    "name": "alimentacionTolva",
+    "aas_submodel": "Alarmas",
+    "aas_collection": null,
+    "aas_property": "alimentacionTolva",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "alimentacionTolva",
+    "influx_tags": {
+      "aas_submodel": "Alarmas",
+      "aas_property": "alimentacionTolva"
+    },
+    "value_type": "xs:boolean",
+    "unit": null,
+    "default": false,
+    "description": "Alarma de alimentación de tolva",
+    "class": "alarm"
+  },
+  {
+    "name": "paradaEmergencia",
+    "aas_submodel": "Alarmas",
+    "aas_collection": null,
+    "aas_property": "paradaEmergencia",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "paradaEmergencia",
+    "influx_tags": {
+      "aas_submodel": "Alarmas",
+      "aas_property": "paradaEmergencia"
+    },
+    "value_type": "xs:boolean",
+    "unit": null,
+    "default": false,
+    "description": "Parada de emergencia activa",
+    "class": "alarm"
+  },
+  {
+    "name": "Tara",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "Tara",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "Tara",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "Tara"
+    },
+    "value_type": "xs:float",
+    "unit": "kg",
+    "default": 1.0,
+    "description": "Tara de la bolsa",
+    "class": "runtime"
+  },
+  {
+    "name": "cantidadPesadas",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "cantidadPesadas",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "cantidadPesadas",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "cantidadPesadas"
+    },
+    "value_type": "xs:int",
+    "unit": "count",
+    "default": 0,
+    "description": "Cantidad de pesadas realizadas",
+    "class": "runtime"
+  },
+  {
+    "name": "estado",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "estado",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "estado",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "estado"
+    },
+    "value_type": "xs:boolean",
+    "unit": null,
+    "default": false,
+    "description": "Estado actual de la pesada",
+    "class": "runtime"
+  },
+  {
+    "name": "fecha",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "fecha",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "fecha",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "fecha"
+    },
+    "value_type": "xs:int",
+    "unit": "YYYYMMDD",
+    "default": 0,
+    "description": "Fecha actual del sistema",
+    "class": "runtime"
+  },
+  {
+    "name": "hora",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "hora",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "hora",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "hora"
+    },
+    "value_type": "xs:int",
+    "unit": "HHMMSS",
+    "default": 0,
+    "description": "Hora actual del sistema",
+    "class": "runtime"
+  },
+  {
+    "name": "peso",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "peso",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "peso",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "peso"
+    },
+    "value_type": "xs:float",
+    "unit": "kg",
+    "default": 0.0,
+    "description": "Peso actual de la pesada",
+    "class": "runtime"
+  },
+  {
+    "name": "pesoBruto",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "pesoBruto",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "pesoBruto",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "pesoBruto"
+    },
+    "value_type": "xs:float",
+    "unit": "kg",
+    "default": 0.0,
+    "description": "Peso bruto actual",
+    "class": "runtime"
+  },
+  {
+    "name": "pesoNeto",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "pesoNeto",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "pesoNeto",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "pesoNeto"
+    },
+    "value_type": "xs:float",
+    "unit": "kg",
+    "default": 0.0,
+    "description": "Peso neto calculado",
+    "class": "runtime"
+  },
+  {
+    "name": "pesoTotal",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Pesada",
+    "aas_property": "pesoTotal",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "pesoTotal",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Pesada",
+      "aas_property": "pesoTotal"
+    },
+    "value_type": "xs:float",
+    "unit": "kg",
+    "default": 0.0,
+    "description": "Peso total acumulado",
+    "class": "runtime"
+  },
+  {
+    "name": "cantidadLlenadas",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Produccion",
+    "aas_property": "cantidadLlenadas",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "cantidadLlenadas",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Produccion",
+      "aas_property": "cantidadLlenadas"
+    },
+    "value_type": "xs:int",
+    "unit": "count",
+    "default": 0,
+    "description": "Cantidad de llenadas del lote",
+    "class": "runtime"
+  },
+  {
+    "name": "consumoElectrico",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Produccion",
+    "aas_property": "consumoElectrico",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "consumoElectrico",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Produccion",
+      "aas_property": "consumoElectrico"
+    },
+    "value_type": "xs:float",
+    "unit": "kWh",
+    "default": 0.0,
+    "description": "Consumo eléctrico",
+    "class": "runtime"
+  },
+  {
+    "name": "horasProduccion",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Produccion",
+    "aas_property": "horasProduccion",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "horasProduccion",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Produccion",
+      "aas_property": "horasProduccion"
+    },
+    "value_type": "xs:float",
+    "unit": "h",
+    "default": 0.0,
+    "description": "Horas acumuladas de producción",
+    "class": "runtime"
+  },
+  {
+    "name": "tiempoCiclo",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Produccion",
+    "aas_property": "tiempoCiclo",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "tiempoCiclo",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Produccion",
+      "aas_property": "tiempoCiclo"
+    },
+    "value_type": "xs:float",
+    "unit": "s",
+    "default": 0.0,
+    "description": "Tiempo de ciclo promedio",
+    "class": "runtime"
+  },
+  {
+    "name": "tiempoCicloActual",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Produccion",
+    "aas_property": "tiempoCicloActual",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "tiempoCicloActual",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Produccion",
+      "aas_property": "tiempoCicloActual"
+    },
+    "value_type": "xs:float",
+    "unit": "s",
+    "default": 0.0,
+    "description": "Tiempo de ciclo actual",
+    "class": "runtime"
+  },
+  {
+    "name": "tiempoLlenado",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Produccion",
+    "aas_property": "tiempoLlenado",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "tiempoLlenado",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Produccion",
+      "aas_property": "tiempoLlenado"
+    },
+    "value_type": "xs:float",
+    "unit": "s",
+    "default": 0.0,
+    "description": "Tiempo de llenado",
+    "class": "runtime"
+  },
+  {
+    "name": "tiempoPreparacion",
+    "aas_submodel": "Operativos",
+    "aas_collection": "Produccion",
+    "aas_property": "tiempoPreparacion",
+    "influx_measurement": "historian_semantic",
+    "influx_field": "tiempoPreparacion",
+    "influx_tags": {
+      "aas_submodel": "Operativos",
+      "aas_collection": "Produccion",
+      "aas_property": "tiempoPreparacion"
+    },
+    "value_type": "xs:float",
+    "unit": "s",
+    "default": 0.0,
+    "description": "Tiempo de preparación",
+    "class": "runtime"
+  }
+]
