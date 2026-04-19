@@ -93,6 +93,9 @@ jobs:
         run: |
           docker run -d --name historian_ci --network ci_net \
             -v ${{ github.workspace }}/src/historian/tags.yaml:/app/src/historian/tags.yaml:ro \
+            -v ${{ github.workspace }}/src/historian/aas_mapping.yaml:/app/src/historian/aas_mapping.yaml:ro \
+            -e HISTORIAN_TAGS=/app/src/historian/tags.yaml \
+            -e AAS_MAPPING_PATH=/app/src/historian/aas_mapping.yaml \
             -e INFLUX_URL=http://influx_ci:8086 \
             -e INFLUX_TOKEN=ci-token \
             -e INFLUX_ORG=myorg \
@@ -110,8 +113,11 @@ jobs:
           echo "=== INFLUXDB LOGS ==="
           docker logs influx_ci || true
           echo ""
+          echo "=== HISTORIAN FILES ==="
+          docker exec historian_ci ls -l /app/src/historian || true
+          echo ""
           
-          QUERY='from(bucket:"mybucket") |> range(start:-10m) |> filter(fn:(r) => r._measurement=="historian_measurement") |> last()'
+          QUERY='from(bucket:"mybucket") |> range(start:-10m) |> filter(fn:(r) => r._measurement=="historian_semantic") |> last()'
           
           curl -s -w "\n%{http_code}\n" -X POST "http://localhost:8086/api/v2/query?org=myorg" \
             -H "Authorization: Token ci-token" \
