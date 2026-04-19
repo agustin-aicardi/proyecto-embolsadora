@@ -85,6 +85,18 @@ services:
     networks:
       - pe_net
 
+  basyx-ui:
+    image: eclipsebasyx/aas-gui:latest
+    container_name: basyx-ui
+    ports:
+      - "3000:3000"
+    environment:
+      AAS_SERVER_URL: http://basyx:8081
+    depends_on:
+      - basyx
+    networks:
+      - pe_net
+
 networks:
   pe_net:
     driver: bridge
