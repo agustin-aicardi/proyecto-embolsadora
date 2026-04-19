@@ -16,12 +16,14 @@ from .influx_writer import InfluxWriter
 from .modbus_reader import read_tag
 from .tag_loader import load_tags
 from .aas_updater import AASUpdater
+from .basyx_updater import BaSyxUpdater
 
 try:
     from .mock_modbus import MockModbusClient
 except Exception:
     MockModbusClient = None
 
+basyx_url = os.environ.get("BASYX_URL")
 
 load_dotenv()
 
@@ -116,6 +118,19 @@ def main() -> None:
             output_path=aas_output_path,
             mapping_path=aas_mapping_path,
             tags_path=cfg_path,
+        )
+
+    basyx_updater = None
+    if basyx_url and aas_xml_path and mapping_doc:
+        basyx_updater = BaSyxUpdater(
+            base_url=basyx_url,
+            aas_xml_path=aas_xml_path,
+            mapping_doc=mapping_doc,
+        )
+        struct_log(
+            "info",
+            "basyx.updater_initialized",
+            basyx_url=basyx_url,
         )
 
     struct_log(
@@ -251,6 +266,18 @@ def main() -> None:
                         )
                     except Exception as ex:
                         struct_log("error", "aas.update_failed", error=str(ex))
+
+                    if basyx_updater is not None:
+                        try:
+                            basyx_updated = basyx_updater.update_from_dict(aas_values)
+                            struct_log(
+                                "info",
+                                "basyx.updated",
+                                updated_tags=basyx_updated,
+                                basyx_url=basyx_url,
+                            )
+                        except Exception as ex:
+                            struct_log("error", "basyx.update_failed", error=str(ex))
 
             struct_log(
                 "info",
