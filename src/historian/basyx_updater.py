@@ -19,6 +19,9 @@ class BaSyxUpdater:
         self.mappings = mapping_doc.get("mappings", [])
         self.submodel_ids = self._load_submodel_ids()
 
+        self.last_sent_values: dict[str, Any] = {}
+        self.float_tolerance = 1e-3
+
     def _load_submodel_ids(self) -> dict[str, str]:
         tree = ET.parse(self.aas_xml_path)
         root = tree.getroot()
@@ -56,6 +59,23 @@ class BaSyxUpdater:
             parts.append(aas["collection"])
         parts.append(aas["property"])
         return ".".join(parts)
+
+    def _has_changed(self, name: str, value: Any) -> bool:
+        if name not in self.last_sent_values:
+            return True
+
+        previous = self.last_sent_values[name]
+
+        if isinstance(value, bool) or isinstance(previous, bool):
+            return value != previous
+
+        if isinstance(value, float) or isinstance(previous, float):
+            try:
+                return abs(float(value) - float(previous)) > self.float_tolerance
+            except (TypeError, ValueError):
+                return value != previous
+
+        return value != previous
 
     def _patch_property_value(
         self,
@@ -95,6 +115,11 @@ class BaSyxUpdater:
             if name not in values:
                 continue
 
+            value = values[name]
+
+            if not self._has_changed(name, value):
+                continue
+
             aas = mapping["aas"]
             submodel_idshort = aas["submodel"]
 
@@ -109,8 +134,10 @@ class BaSyxUpdater:
             self._patch_property_value(
                 submodel_identifier=submodel_identifier,
                 idshort_path=idshort_path,
-                value=values[name],
+                value=value,
             )
+
+            self.last_sent_values[name] = value
             updated.append(name)
 
         return updated
