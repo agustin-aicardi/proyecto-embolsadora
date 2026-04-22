@@ -570,7 +570,7 @@
             <ns0:property>
               <ns0:idShort>peso</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>49.862998962402344</ns0:value></ns0:property>
+            <ns0:value>49.99800109863281</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>numeroTicket</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -578,19 +578,19 @@
             <ns0:property>
               <ns0:idShort>pesoTotal</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>350.3699951171875</ns0:value></ns0:property>
+            <ns0:value>50.194000244140625</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>cantidadPesadas</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>41</ns0:value></ns0:property>
+            <ns0:value>4</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>pesoNeto</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>48.862998962402344</ns0:value></ns0:property>
+            <ns0:value>48.99800109863281</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>pesoBruto</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>49.862998962402344</ns0:value></ns0:property>
+            <ns0:value>49.99800109863281</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>Tara</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -606,11 +606,11 @@
             <ns0:property>
               <ns0:idShort>hora</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>2346</ns0:value></ns0:property>
+            <ns0:value>2230</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>fecha</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>1904</ns0:value></ns0:property>
+            <ns0:value>2204</ns0:value></ns0:property>
           </ns0:value>
         </ns0:submodelElementCollection>
         <ns0:submodelElementCollection>
@@ -619,27 +619,27 @@
             <ns0:property>
               <ns0:idShort>tiempoCiclo</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>52.0629997253418</ns0:value></ns0:property>
+            <ns0:value>53.82500076293945</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>tiempoCicloActual</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>49.95600128173828</ns0:value></ns0:property>
+            <ns0:value>50.5369987487793</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>tiempoPreparacion</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>23.047000885009766</ns0:value></ns0:property>
+            <ns0:value>24.972999572753906</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>tiempoLlenado</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>26.909000396728516</ns0:value></ns0:property>
+            <ns0:value>25.56399917602539</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>cantidadLlenadas</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>41</ns0:value></ns0:property>
+            <ns0:value>4</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>horasProduccion</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>0.5928999781608582</ns0:value></ns0:property>
+            <ns0:value>0.05979999899864197</ns0:value></ns0:property>
             <ns0:property>
               <ns0:idShort>horasUso</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
@@ -683,7 +683,7 @@
             <ns0:property>
               <ns0:idShort>consumoElectrico</ns0:idShort>
               <ns0:valueType>xs:string</ns0:valueType>
-            <ns0:value>1.5020999908447266</ns0:value></ns0:property>
+            <ns0:value>1.4951000213623047</ns0:value></ns0:property>
           </ns0:value>
         </ns0:submodelElementCollection>
       </ns0:submodelElements>
