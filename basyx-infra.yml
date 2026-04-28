@@ -1,0 +1,13 @@
+infrastructures:
+  default: rpi
+  rpi:
+    name: Raspberry Pi AAS
+    components:
+      aasRepository:
+        baseUrl: "http://192.168.1.118:8081"
+      submodelRepository:
+        baseUrl: "http://192.168.1.118:8081"
+      conceptDescriptionRepository:
+        baseUrl: "http://192.168.1.118:8081"
+    security:
+      type: none

@@ -91,11 +91,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      AAS_SERVER_URL: http://basyx:8081
+      ENDPOINT_CONFIG_AVAILABLE: "true"
     depends_on:
       - basyx
     networks:
       - pe_net
+
 
 networks:
   pe_net:
