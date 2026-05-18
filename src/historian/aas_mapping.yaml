@@ -5,6 +5,24 @@ defaults:
     measurement: historian_semantic
 
 mappings:
+  - name: heartbeat
+    enabled: true
+    aas:
+      submodel: Operativos
+      collection: Produccion
+      property: heartbeat
+    historian:
+      tags:
+        aas_submodel: Operativos
+        aas_collection: Produccion
+        aas_property: heartbeat
+    data:
+      value_type: xs:int
+      unit: count
+      default: 0
+    semantics:
+      description: Pulso de vida lógico del PLC utilizado para verificar que el programa de control continúa ejecutándose
+      class: diagnostic
   - name: peso
     enabled: true
     aas:

@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from pymodbus.client import ModbusTcpClient
 
 from .influx_writer import InfluxWriter
-from .modbus_reader import read_tag
+from .modbus_reader import read_tag, ReadResult
 from .tag_loader import load_tags
 from .aas_updater import AASUpdater
 from .basyx_updater import BaSyxUpdater
@@ -23,9 +23,9 @@ try:
 except Exception:
     MockModbusClient = None
 
-basyx_url = os.environ.get("BASYX_URL")
-
 load_dotenv()
+
+basyx_url = os.environ.get("BASYX_URL")
 
 LOG = logging.getLogger("historian")
 handler = logging.StreamHandler()
@@ -63,12 +63,18 @@ def build_mapping_index(mapping_doc: dict[str, Any]) -> dict[str, dict[str, Any]
     return index
 
 
-def build_historian_config(mapping_doc: dict[str, Any], entry: dict[str, Any]) -> tuple[str, dict[str, str]]:
+def build_historian_config(
+    mapping_doc: dict[str, Any],
+    entry: dict[str, Any],
+) -> tuple[str, dict[str, str]]:
     defaults = mapping_doc.get("defaults", {})
     default_historian = defaults.get("historian", {})
     historian = entry.get("historian", {})
 
-    measurement = historian.get("measurement", default_historian.get("measurement", "historian_semantic"))
+    measurement = historian.get(
+        "measurement",
+        default_historian.get("measurement", "historian_semantic"),
+    )
     tags = historian.get("tags", {})
 
     return measurement, tags
@@ -79,6 +85,11 @@ def main() -> None:
     modbus_host = os.environ.get("MODBUS_HOST", "plc")
     modbus_port = int(os.environ.get("MODBUS_PORT", "502"))
     poll_interval = float(os.environ.get("POLL_INTERVAL", "1.0"))
+
+    heartbeat_tag_name = os.environ.get("HEARTBEAT_TAG_NAME", "heartbeat")
+    heartbeat_timeout = float(os.environ.get("HEARTBEAT_TIMEOUT", "5.0"))
+    last_heartbeat_value = None
+    last_heartbeat_change_ts = None
 
     influx_url = os.environ.get("INFLUX_URL", "http://influxdb:8086")
     influx_token = os.environ.get("INFLUX_TOKEN", "my-token")
@@ -139,6 +150,8 @@ def main() -> None:
         modbus_host=modbus_host,
         modbus_port=modbus_port,
         tags=len(tags),
+        heartbeat_tag=heartbeat_tag_name,
+        heartbeat_timeout=heartbeat_timeout,
     )
 
     if modbus_host == "mock" and MockModbusClient is not None:
@@ -174,16 +187,36 @@ def main() -> None:
 
             for tag in tags:
                 attempts = 0
-                value = None
-                quality = "BAD"
+                result = ReadResult(
+                    value=None,
+                    quality="BAD",
+                    reason="not_read",
+                )
 
                 while attempts < 3:
+                    attempts += 1
+
                     try:
-                        value = read_tag(mb_client, tag)
-                        quality = "GOOD"
-                        break
+                        result = read_tag(mb_client, tag)
+
+                        if result.quality == "GOOD":
+                            break
+
+                        struct_log(
+                            "warning",
+                            "read.invalid",
+                            tag=tag.name,
+                            attempt=attempts,
+                            quality=result.quality,
+                            reason=result.reason,
+                        )
+
                     except Exception as ex:
-                        attempts += 1
+                        result = ReadResult(
+                            value=None,
+                            quality="BAD",
+                            reason="read_exception",
+                        )
                         struct_log(
                             "warning",
                             "read.failed",
@@ -191,33 +224,73 @@ def main() -> None:
                             attempt=attempts,
                             error=str(ex),
                         )
-                        time.sleep(5)
 
-                if value is None:
-                    cycle_values[tag.name] = {
-                        "value": None,
-                        "timestamp": cycle_ts.isoformat(),
-                        "quality": "BAD",
-                        "source": source_name,
-                        "attempts": attempts,
-                    }
-                    struct_log("warning", "value.missing", tag=tag.name)
-                    continue
+                    time.sleep(0.2)
+
+                value = result.value
+                quality = result.quality
+                reason = result.reason
+
+                if tag.name == heartbeat_tag_name and quality == "GOOD":
+                    if last_heartbeat_value is None or value != last_heartbeat_value:
+                        last_heartbeat_value = value
+                        last_heartbeat_change_ts = cycle_ts
+
+                        struct_log(
+                            "info",
+                            "heartbeat.changed",
+                            tag=tag.name,
+                            value=value,
+                        )
+
+                    elif last_heartbeat_change_ts is not None:
+                        seconds_since_change = (
+                            cycle_ts - last_heartbeat_change_ts
+                        ).total_seconds()
+
+                        if seconds_since_change > heartbeat_timeout:
+                            quality = "STALE"
+                            reason = "heartbeat_not_changing"
+
+                            struct_log(
+                                "warning",
+                                "heartbeat.stale",
+                                tag=tag.name,
+                                value=value,
+                                seconds_since_change=seconds_since_change,
+                                timeout=heartbeat_timeout,
+                            )
 
                 cycle_values[tag.name] = {
                     "value": value,
                     "timestamp": cycle_ts.isoformat(),
                     "quality": quality,
+                    "reason": reason,
                     "source": source_name,
                     "attempts": attempts,
                 }
+
+                if value is None or quality != "GOOD":
+                    struct_log(
+                        "warning",
+                        "value.invalid",
+                        tag=tag.name,
+                        quality=quality,
+                        reason=reason,
+                        attempts=attempts,
+                        source=source_name,
+                    )
+                    continue
 
                 mapping_entry = mapping_index.get(tag.name)
                 if mapping_entry is None:
                     struct_log("warning", "mapping.missing_for_tag", tag=tag.name)
                     continue
 
-                measurement, historian_tags = build_historian_config(mapping_doc, mapping_entry)
+                measurement, historian_tags = build_historian_config(
+                    mapping_doc,
+                    mapping_entry,
+                )
                 field_name = mapping_entry["name"]
 
                 try:
@@ -236,10 +309,12 @@ def main() -> None:
                         field=field_name,
                         value=value,
                         quality=quality,
+                        reason=reason,
                         source=source_name,
                     )
                 except Exception as ex:
                     cycle_values[tag.name]["quality"] = "INFLUX_WRITE_FAILED"
+                    cycle_values[tag.name]["reason"] = "influx_write_failed"
                     struct_log(
                         "error",
                         "influx.write_failed",
@@ -283,8 +358,12 @@ def main() -> None:
                 "info",
                 "cycle.completed",
                 tags_total=len(tags),
-                tags_ok=len([v for v in cycle_values.values() if v["quality"] == "GOOD"]),
-                tags_bad=len([v for v in cycle_values.values() if v["quality"] != "GOOD"]),
+                tags_ok=len(
+                    [v for v in cycle_values.values() if v["quality"] == "GOOD"]
+                ),
+                tags_bad=len(
+                    [v for v in cycle_values.values() if v["quality"] != "GOOD"]
+                ),
             )
 
             time.sleep(poll_interval)

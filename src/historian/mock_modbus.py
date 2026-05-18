@@ -191,9 +191,17 @@ class MockModbusClient:
         if address == 2 and count == 1:
             return MockCoilsResponse([self._alimentacion_tolva()])
 
-        return MockCoilsResponse([False] * (count or 1))
+        # Unknown coil address: simulate invalid Modbus response
+        return None
+    
+    def _heartbeat(self) -> int:
+        return 100
+        #return int(time.time()) % 30000
 
     def read_holding_registers(self, address=None, count=None, slave=None):
+        if address == 999 and count == 1:
+            return MockRegistersResponse([self._heartbeat() & 0xFFFF])
+
         if address == 10 and count == 1:
             return MockRegistersResponse([self._cantidad_pesadas() & 0xFFFF])
 
@@ -246,4 +254,5 @@ class MockModbusClient:
         if address == 140 and count == 1:
             return MockRegistersResponse([self._fecha_ddmm() & 0xFFFF])
 
-        return MockRegistersResponse([0] * (count or 1))
+        # Unknown register address: simulate invalid Modbus response
+        return None

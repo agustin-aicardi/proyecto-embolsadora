@@ -1,4 +1,9 @@
 tags:
+  - name: heartbeat
+    type: int16
+    address: 999
+    unit: 1
+    
   - name: peso
     address: 20
     type: float32
