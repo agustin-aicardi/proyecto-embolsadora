@@ -616,6 +616,10 @@
           <idShort>Produccion</idShort>
           <value>
             <property>
+              <idShort>heartbeat</idShort>
+              <valueType>xs:string</valueType>
+            </property>
+            <property>
               <idShort>tiempoCiclo</idShort>
               <valueType>xs:string</valueType>
             </property>

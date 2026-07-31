@@ -1,0 +1,48 @@
+=== GIT ===
+e18b0bf Add data quality handling and heartbeat stale detection
+?? inventory-rpi.txt
+
+=== SISTEMA ===
+Linux raspberrypi 6.12.34+rpt-rpi-v8 #1 SMP PREEMPT Debian 1:6.12.34-1+rpt1~bookworm (2025-06-26) aarch64 GNU/Linux
+aarch64
+
+=== DOCKER ===
+Docker version 20.10.24+dfsg1, build 297e128
+Docker Compose version v5.0.0
+
+=== SERVICIOS ===
+NAME                              IMAGE                                         COMMAND                  SERVICE    CREATED         STATUS                   PORTS
+aas_historian_middleware          proyecto-embolsadora:dev                      "python3 -m src.hist…"   app        4 minutes ago   Up 4 minutes             
+basyx-ui                          eclipsebasyx/aas-gui:latest                   "/usr/src/app/entryp…"   basyx-ui   4 minutes ago   Up 4 minutes             80/tcp, 0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+basyx_aas_environment             eclipsebasyx/aas-environment:2.0.0-SNAPSHOT   "java -jar basyxExec…"   basyx      4 minutes ago   Up 4 minutes (healthy)   0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp
+proyecto-embolsadora-influxdb-1   influxdb:2.6                                  "/entrypoint.sh infl…"   influxdb   4 minutes ago   Up 4 minutes             0.0.0.0:8086->8086/tcp, [::]:8086->8086/tcp
+
+=== IMAGENES ===
+CONTAINER                         REPOSITORY                      TAG                                                                PLATFORM            IMAGE ID            SIZE                CREATED
+aas_historian_middleware          proyecto-embolsadora            dev                                                                linux/arm64/v8      eac1887c8117        466MB               5 minutes ago
+basyx-ui                          eclipsebasyx/aas-gui            latest                                                             linux/arm64         fd21ebaf4c4f        90.8MB              4 months ago
+basyx_aas_environment             eclipsebasyx/aas-environment    2.0.0-SNAPSHOT                                                     linux/arm64         6f0f8cac45a8        580MB               3 months ago
+faaast_service                    fraunhoferiosb/faaast-service   latest                                                             linux/arm64         67202e7b22a9        460MB               5 months ago
+modbus_plc_sim                    sha256                          fae02124a7de0f4254e21e7210028493c3b2fffbdf4dfb21596a651051f706af   linux/arm64         fae02124a7de        466MB               4 months ago
+proyecto-embolsadora-influxdb-1   influxdb                        2.6                                                                linux/arm64/v8      9e2fd68c2504        221MB               3 years ago
+
+=== PYTHON ===
+Python 3.11.14
+pip 24.0 from /usr/local/lib/python3.11/site-packages/pip (python 3.11)
+
+=== PAQUETES PYTHON ===
+certifi==2026.2.25
+influxdb-client==1.33.0
+iniconfig==2.3.0
+packaging==26.0
+pluggy==1.6.0
+Pygments==2.19.2
+pymodbus==3.1.0
+pytest==9.0.2
+python-dateutil==2.9.0.post0
+python-dotenv==1.0.0
+PyYAML==6.0
+reactivex==4.1.0
+six==1.17.0
+typing_extensions==4.15.0
+urllib3==2.6.3

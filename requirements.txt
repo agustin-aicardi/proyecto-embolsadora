@@ -3,5 +3,5 @@ pymodbus==3.1.0
 influxdb-client==1.33.0
 PyYAML==6.0
 python-dotenv==1.0.0
-pytest>=7.0
+pytest>=9.0.2
 

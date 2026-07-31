@@ -18,6 +18,7 @@ services:
       - AAS_XML_PATH=/app/Embolsadora_V3.xml
       - AAS_MAPPING_PATH=/app/src/historian/aas_mapping.yaml
       - AAS_OUTPUT_PATH=/app/runtime/Embolsadora_runtime.xml
+      - BASYX_URL=http://basyx:8081
     volumes:
       - ./src/historian/tags.yaml:/app/src/historian/tags.yaml:ro
       - ./src/historian/tags.yaml:/app/src/historian/tags.yaml:ro
@@ -56,20 +57,46 @@ services:
     networks:
       - pe_net
 
-  faaast:
-    image: fraunhoferiosb/faaast-service:latest
-    container_name: faaast_service
+  # faaast:
+  #   image: fraunhoferiosb/faaast-service:latest
+  #   container_name: faaast_service
+  #   ports:
+  #     - "8081:8081"
+  #   volumes:
+  #     - ./faaast/config.json:/app/config/config.json:ro
+  #     - ./:/app/model
+  #     - ./faaast/data:/app/faaast-data
+  #   command: ["-c", "/app/config/config.json"]
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - pe_net
+
+  basyx:
+    image: eclipsebasyx/aas-environment:2.0.0-SNAPSHOT
+    container_name: basyx_aas_environment
     ports:
       - "8081:8081"
     volumes:
-      - ./faaast/config.json:/app/config/config.json:ro
-      - ./:/app/model
-      - ./faaast/data:/app/faaast-data
-    command: ["-c", "/app/config/config.json"]
+      - ./runtime:/app/runtime:ro
+      - ./basyx/application.properties:/application/application.properties:ro
     depends_on:
       - app
     networks:
       - pe_net
+
+  basyx-ui:
+    image: eclipsebasyx/aas-gui:latest
+    container_name: basyx-ui
+    ports:
+      - "3000:3000"
+    environment:
+      ENDPOINT_CONFIG_AVAILABLE: "true"
+    depends_on:
+      - basyx
+    networks:
+      - pe_net
+
 
 networks:
   pe_net:
