@@ -1,0 +1,8 @@
+{
+  "default": true,
+  "MD013": false,          // largo de línea: no se limita
+  "MD033": false,          // HTML inline permitido (details/summary)
+  "MD041": false,          // front-matter antes del primer título
+  "MD025": { "front_matter_title": "" }, // el `title:` del front-matter no cuenta como H1
+  "MD024": { "siblings_only": true }
+}

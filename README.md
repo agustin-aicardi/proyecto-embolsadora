@@ -1,219 +1,51 @@
 # Proyecto Embolsadora – IIoT Historian & Asset Administration Shell
 
-Este proyecto implementa una arquitectura de digitalización industrial basada en **Asset Administration Shell (AAS)** y **series temporales** para el monitoreo de una máquina embolsadora.
+## Qué es y dónde corre
 
-El sistema adquiere datos desde un PLC (actualmente simulado), los almacena en una base de datos de series temporales y actualiza una representación semántica del sistema mediante AAS.
+El *historian* de la máquina embolsadora: un servicio Python que lee variables del PLC por **Modbus TCP**, las guarda en **InfluxDB 2.x** con tags semánticos derivados del **Asset Administration Shell (AAS)** y, opcionalmente, mantiene un XML AAS en runtime que sirve **FA³ST**. Forma parte de una tesis de maestría en Informática Industrial (AAS, IIoT, series temporales, RAMI 4.0). Uso académico.
 
----
+Corre en contenedores Docker sobre una **Raspberry Pi** (imagen `linux/arm64`, base `python:3.11-slim-bookworm`). Hoy el PLC es **simulado** (`MODBUS_HOST=mock`); no hay evidencia de pruebas contra un PLC real.
 
-# Arquitectura del sistema
+## Quickstart
 
-El sistema sigue un pipeline típico de **Industrial IoT (IIoT)**:
-PLC / Mock Modbus
-↓
-Modbus Reader
-↓
-Historian Middleware (Python)
-↓
-InfluxDB (series temporales)
-↓
-Runtime AAS XML
-↓
-FA³ST AAS Server
+Requisitos: Docker con Compose v2.
 
+```bash
+git clone https://github.com/agustin-aicardi/proyecto-embolsadora.git
+cd proyecto-embolsadora
+cp .env.example .env        # completar INFLUX_TOKEN (openssl rand -hex 32)
+docker compose up -d --build
+docker compose logs --tail 20 app    # deben verse "point.written" y "cycle.completed"
+```
 
-El middleware cumple dos funciones principales:
+InfluxDB queda en `http://localhost:8086` (org `org`, bucket `bucket`). Último valor de una variable:
 
-- almacenamiento histórico de datos en **InfluxDB**
-- actualización dinámica del **Asset Administration Shell**
+```flux
+from(bucket: "bucket")
+  |> range(start: -10m)
+  |> filter(fn: (r) => r._measurement == "historian_semantic")
+  |> filter(fn: (r) => r._field == "peso")
+  |> last()
+```
 
-Esto permite separar:
+Para correr junto a `embolsadora-edge` en una Pi con **una sola** InfluxDB, no levantar este compose: usar [`embolsadora-bundle`](https://github.com/fdegiovanni/embolsadora-bundle).
 
-- **datos históricos** (InfluxDB)
-- **estructura semántica del sistema** (AAS)
+## Arquitectura
 
----
+Un único proceso en bucle: lee cada tag del PLC, lo etiqueta con `aas_mapping.yaml` y lo escribe en InfluxDB; opcionalmente actualiza el XML AAS. Detalle y esquema en [`docs/architecture.md`](./docs/architecture.md); lo que el código hace, en la [spec 001](./specs/001-historian-semantico/spec.md).
 
-# Componentes del sistema
+## Contratos
 
-## Historian Middleware
+- **Expone:** el esquema de InfluxDB (measurement `historian_semantic`, tags `aas_submodel`/`aas_collection`/`aas_property`) y `src/historian/aas_mapping.yaml`, que consumen `embolsadora-edge` y, vía el cloud, el frontend. **Cambiarlos es cambiar un contrato** ([HIST-ADR-001](./docs/adr/HIST-ADR-001-semantica-aas-en-tags-de-influxdb.md)). Catálogo derivado de las variables: [`runtime/catalog.md`](./runtime/catalog.md).
+- **Consume:** Modbus TCP del PLC; el mapa de registros está en `src/historian/tags.yaml`.
+- Variables de entorno: [`.env.example`](./.env.example).
 
-Aplicación Python que:
+## Operación
 
-- lee variables por **Modbus**
-- aplica un **mapping semántico basado en AAS**
-- guarda datos en **InfluxDB**
-- actualiza el **AAS runtime**
+Despliegue, logs, troubleshooting y seguridad: [`docs/operations.md`](./docs/operations.md). Setup local y tests: [`docs/development.md`](./docs/development.md).
 
-Archivos principales:  
-src/historian/  
-├── main.py  
-├── modbus_reader.py  
-├── mock_modbus.py  
-├── aas_updater.py  
-├── aas_mapping.yaml  
-├── tags.yaml  
+## Estado y enlaces
 
-
----
-
-## InfluxDB
-
-Base de datos de series temporales que almacena:
-
-- valores
-- timestamp
-- tags semánticos derivados del AAS
-
-Ejemplo de tags utilizados:
-aas_submodel  
-aas_collection  
-aas_property  
-
-Esto permite reconstruir la jerarquía semántica del sistema directamente desde la base de datos.
-
----
-
-## Asset Administration Shell
-
-El sistema mantiene una representación AAS de la máquina.
-
-Archivo base del modelo:
-Embolsadora_V3.xml
-
-Durante la ejecución se genera dinámicamente:
-runtime/Embolsadora_runtime.xml
-
-Este archivo refleja el estado actual de las variables del sistema.
-
----
-
-# Variables del sistema
-
-Actualmente el sistema genera variables simuladas como:
-
-- peso
-- pesoBruto
-- pesoNeto
-- pesoTotal
-- cantidadPesadas
-- cantidadLlenadas
-- tiempoCiclo
-- tiempoPreparacion
-- tiempoLlenado
-- consumoElectrico
-- horasProduccion
-- alimentacionTolva
-- paradaEmergencia
-- fecha
-- hora
-- Tara
-
-Los datos son generados automáticamente mediante un **mock Modbus PLC**.
-
----
-
-# Catálogo de variables
-
-El proyecto genera automáticamente un catálogo de variables basado en el mapping AAS.
-
-Archivos generados:
-runtime/catalog.json  
-runtime/catalog.md  
-
-El catálogo describe:
-
-- submodelo AAS
-- collection
-- property
-- measurement en InfluxDB
-- field
-- unidad
-- descripción
-
-Sirve como referencia para saber **cómo consultar cada variable en la base de datos**.
-
----
-
-# Ejecución del sistema
-
-## 1. Clonar repositorio
-git clone <repo>
-cd ProyectoEmbolsadora
-
-
-## 2. Levantar contenedores
-docker compose up -d
-
-Esto levanta:
-
-- middleware historian
-- InfluxDB
-- simulación PLC
-
-El sistema comienza a generar datos automáticamente.
-
----
-
-# Acceso a InfluxDB
-URL: http://localhost:8086  
-ORG: org  
-BUCKET: bucket  
-
-
-Las consultas pueden realizarse utilizando **Flux**.
-
-Ejemplo para obtener el último valor de peso:  
-from(bucket: "bucket")  
-|> range(start: -10m)  
-|> filter(fn: (r) => r._measurement == "historian_semantic")  
-|> filter(fn: (r) => r._field == "peso")  
-|> last()  
-
-
----
-
-# Estructura semántica
-
-La estructura del sistema está definida en:
-src/historian/aas_mapping.yaml
-
-
-Este archivo define la relación entre:
-AAS Submodel
-→ Submodel Collection
-→ Property
-→ Variable historian
-
-De esta forma los datos históricos pueden relacionarse con la estructura semántica del sistema.
-
----
-
-# Estado actual del proyecto
-
-Actualmente el sistema:
-
-- simula un PLC mediante Mock Modbus
-- almacena datos en InfluxDB
-- actualiza el runtime AAS
-- genera catálogo automático de variables
-- utiliza tags semánticos derivados del AAS
-
----
-
-# Objetivo del proyecto
-
-Este proyecto forma parte de una **tesis de maestría en Informática Industrial**, cuyo objetivo es desarrollar una arquitectura de digitalización basada en:
-
-- **Asset Administration Shell**
-- **Industrial IoT**
-- **series temporales**
-- **RAMI 4.0**
-
-La propuesta busca separar la capa de **información semántica del sistema** de la capa de **almacenamiento histórico de datos**, manteniendo una relación consistente entre ambas.
-
----
-
-# Licencia
-
-Uso académico.
+- **Rama activa:** `main`. Último tag: `v0.3-historian-semantic`.
+- **Specs:** [`specs/README.md`](./specs/README.md) · **Decisiones:** [`docs/adr/index.md`](./docs/adr/index.md) · **Reglas para agentes:** [`AGENTS.md`](./AGENTS.md) · **Constitution:** [`.specify/memory/constitution.md`](./.specify/memory/constitution.md).
+- **Hub de documentación del sistema:** [`embolsadora-docs`](https://github.com/fdegiovanni/embolsadora-docs).

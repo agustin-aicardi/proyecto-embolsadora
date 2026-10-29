@@ -1,0 +1,99 @@
+# Harness documental (ver spec "Harness documental de repositorio", §10).
+# Copia del workflow del edge. Lo único que cambia por repo es
+# HARNESS_EXPOSES_HTTP: acá es "0" (el historian no expone una API HTTP propia).
+#
+# Jobs de §10 que NO están acá:
+#   - openapi-drift: el historian no tiene OpenAPI.
+#   - aaspath-check: solo aplica al frontend.
+name: harness
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: "0 12 * * 1" # docs-freshness: lunes 12:00 UTC
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  harness-layout:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    env:
+      HARNESS_EXPOSES_HTTP: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - name: layout, prohibiciones y front-matter
+        run: bash scripts/harness/check-layout.sh
+
+      # El verificador es el único gate del contrato documental: un bug suyo
+      # no se ve (pasa en verde y deja pasar lo que tenía que frenar), así que
+      # corre con sus propios tests al lado.
+      - name: tests del verificador
+        run: bash scripts/harness/test-check-layout.sh
+
+  markdownlint:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: |
+            README.md
+            AGENTS.md
+            CLAUDE.md
+            docs/**/*.md
+            specs/README.md
+            specs/*/spec.md
+            !docs/_process/**
+
+  links:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Solo enlaces locales (--offline): detecta archivos movidos o borrados.
+      # Se excluye el material de proceso, cuyos enlaces apuntan a la
+      # estructura anterior a propósito.
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --offline --no-progress
+            --exclude-path docs/_process
+            README.md AGENTS.md CLAUDE.md docs specs/README.md specs/*/spec.md
+          fail: true
+
+  docs-freshness:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: abrir un issue por página con last_reviewed > 120 días
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # El de-dup NO puede usar `--search "in:title ..."`: la búsqueda de
+          # issues de GitHub tokeniza `/` y `.`, así que una frase
+          # entrecomillada con una ruta (docs/adr/EDGE-ADR-002-....md) matchea
+          # de más o de menos — un fallo abre un duplicado cada lunes y un
+          # match demasiado amplio tapa un issue legítimo. Se listan los
+          # títulos abiertos una vez y se compara el prefijo exacto.
+          open_titles=$(gh issue list --state open --limit 500 --json title --jq '.[].title' < /dev/null)
+          bash scripts/harness/docs-freshness.sh | while IFS=$'\t' read -r file date days; do
+            title="docs: revisar $file (last_reviewed $date)"
+            # El " (" final ancla el match al path completo: ninguna otra
+            # página puede matchear por ser prefijo de esta.
+            if printf '%s\n' "$open_titles" | grep -qF -- "docs: revisar $file ("; then
+              continue
+            fi
+            gh issue create --title "$title" \
+              --body "La página \`$file\` tiene \`last_reviewed: $date\` ($days días). Confirmá que sigue vigente y actualizá la fecha, o corregila." \
+              < /dev/null
+          done

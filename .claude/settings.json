@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 run_tests.py)",
+      "Bash(HARNESS_EXPOSES_HTTP=0 bash scripts/harness/check-layout.sh)",
+      "Bash(bash scripts/harness/check-layout.sh)",
+      "Bash(bash scripts/harness/test-check-layout.sh)",
+      "Bash(bash scripts/harness/docs-freshness.sh)",
+      "Bash(docker compose config:*)",
+      "Bash(docker compose ps:*)",
+      "Bash(docker compose logs:*)"
+    ],
+    "deny": [
+      "Bash(docker compose down -v:*)",
+      "Bash(docker compose down --volumes:*)",
+      "Read(./.env)"
+    ]
+  }
+}
