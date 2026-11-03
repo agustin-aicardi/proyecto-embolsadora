@@ -6,7 +6,7 @@ last_reviewed: 2026-10-29
 
 # Specs de `proyecto-embolsadora`
 
-Índice curado a mano. La referencia entre repos es siempre `<repo>#NNN` (por ejemplo `proyecto-embolsadora#001`). El próximo número libre es **007**.
+Índice curado a mano. La referencia entre repos es siempre `<repo>#NNN` (por ejemplo `proyecto-embolsadora#001`). El próximo número libre es **008**.
 
 ## Índice
 
@@ -18,6 +18,7 @@ last_reviewed: 2026-10-29
 | [004](./004-reintento-escritura-influx/spec.md) | Reintento de escritura en InfluxDB | change | in-progress | — | 2026-11-02 | — |
 | [005](./005-healthcheck-historian/spec.md) | Healthcheck del historian | change | in-progress | — | 2026-11-02 | — |
 | [006](./006-tipo-int32/spec.md) | Tipo de tag `int32` | change | in-progress | — | 2026-11-02 | — |
+| [007](./007-imagen-multiarch/spec.md) | Publicar la imagen multi-arch del historian | change | in-progress | — | 2026-11-02 | — |
 
 **Veredicto** = resultado de la reconciliación contra el código (harness documental §6.1): A implementado como se especificó, B implementado distinto, C descartado, D todavía querido, E basura. La 001 es **retrospectiva**: se escribió leyendo el código, así que su A es trivial (todos sus `RF` son `origen: derivado`). Lo que importa de ella son los desvíos contra la constitution.
 

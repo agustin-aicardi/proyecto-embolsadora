@@ -2,7 +2,7 @@
 title: Índice de decisiones de arquitectura (HIST)
 owner: Federico Degiovanni
 status: vigente
-last_reviewed: 2026-10-29
+last_reviewed: 2026-11-02
 ---
 
 # Decisiones de arquitectura — `proyecto-embolsadora`
@@ -18,6 +18,7 @@ Merece ADR una decisión difícil de revertir que afecte contratos, persistencia
 | [HIST-ADR-001](./HIST-ADR-001-semantica-aas-en-tags-de-influxdb.md) | La semántica AAS viaja en los tags de InfluxDB, definida por `aas_mapping.yaml` | accepted | 2026-04-07 |
 | [HIST-ADR-002](./HIST-ADR-002-xml-aas-runtime-reescrito-por-ciclo.md) | El XML AAS runtime se reescribe completo en cada ciclo y lo sirve FA³ST | accepted | 2026-04-06 |
 | [HIST-ADR-003](./HIST-ADR-003-docker-first-arm64.md) | Docker-first y objetivo Raspberry Pi (ARM64) | accepted | 2026-02-16 |
+| [HIST-ADR-004](./HIST-ADR-004-publicar-imagen-multiarch.md) | Publicar la imagen multi-arch con la integración como condición | accepted | 2026-11-02 |
 
 ## Origen
 

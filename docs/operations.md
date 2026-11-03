@@ -2,7 +2,7 @@
 title: Operación del historian
 owner: Federico Degiovanni
 status: vigente
-last_reviewed: 2026-10-29
+last_reviewed: 2026-11-02
 ---
 
 # Operación
@@ -12,7 +12,7 @@ Despliegue, observabilidad y troubleshooting **del historian**. La instalación 
 ## Despliegue
 
 - **Con este repo:** `docker compose up -d --build` levanta `app` (el historian), `influxdb` (2.6) y `faaast` (puerto `8081`). Las variables salen del compose y del `.env`.
-- **Imagen publicada:** la CI construye `linux/arm64` y, en un push a `main`, publica `ghcr.io/<repo>:latest`. Solo `latest` y solo arm64 ([HIST-ADR-003](./adr/HIST-ADR-003-docker-first-arm64.md)).
+- **Imagen publicada:** en un push a `main`, y solo si pasó la integración, la CI publica `ghcr.io/<repo>` para `linux/amd64` y `linux/arm64`, con las etiquetas `latest` y `sha-<corto>` (para fijar una versión) ([HIST-ADR-004](./adr/HIST-ADR-004-publicar-imagen-multiarch.md), [spec 007](../specs/007-imagen-multiarch/spec.md)).
 - **Junto al edge en una Pi:** usar `embolsadora-bundle`, que reemplaza esta InfluxDB por una compartida con el edge. **No levantar ambos stacks a la vez**: pelean por el puerto `8086`.
 
 > El compose de este repo tiene fijados en texto plano la contraseña de admin de InfluxDB y publica `8086` y `8081` en todas las interfaces. Sirve para desarrollo, no para una planta.

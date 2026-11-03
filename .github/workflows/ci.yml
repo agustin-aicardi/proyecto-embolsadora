@@ -30,14 +30,6 @@ jobs:
         run: docker buildx build --platform linux/arm64 -t proyectoembol_app:latest --load .
       - name: Save image
         run: docker save proyectoembol_app:latest -o proyectoembol_app.tar
-      - name: Publish to GHCR
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
-        run: |
-          # use a PAT if provided, otherwise fall back to GITHUB_TOKEN
-          TOKEN=${{ secrets.CR_PAT || secrets.GITHUB_TOKEN }}
-          echo "$TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker tag proyectoembol_app:latest ghcr.io/${{ github.repository }}:latest
-          docker push ghcr.io/${{ github.repository }}:latest
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -144,3 +136,52 @@ jobs:
           docker stop historian_ci influx_ci || true
           docker rm historian_ci influx_ci || true
           docker network rm ci_net || true
+
+  # Publica la imagen en GHCR, multi-arch (amd64 + arm64), con `latest` y `sha-<corto>`.
+  # Antes se publicaba un paso dentro de `test-and-build`: solo arm64 y ANTES de que
+  # pasara la integración. Ahora corre después de `integration` y solo en un push a main.
+  # Ver docs/adr/HIST-ADR-004 y specs/007-imagen-multiarch.
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: integration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          # Un PAT si hay uno cargado (CR_PAT); si no, el token del workflow.
+          password: ${{ secrets.CR_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+
+      - name: Build and push multi-arch image (amd64, arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
