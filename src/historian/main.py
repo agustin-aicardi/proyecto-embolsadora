@@ -15,6 +15,7 @@ from pymodbus.client import ModbusTcpClient
 from .config import ConfigError, require_env
 from .influx_writer import InfluxWriter
 from .modbus_reader import read_tag
+from .read_policy import read_cycle
 from .tag_loader import load_tags
 from .aas_updater import AASUpdater
 
@@ -157,31 +158,29 @@ def main() -> None:
             error=str(ex),
         )
 
+    def log_read_failure(tag: Any, attempt: int, ex: Exception) -> None:
+        struct_log(
+            "warning",
+            "read.failed",
+            tag=tag.name,
+            attempt=attempt,
+            error=str(ex),
+        )
+
     try:
         while True:
             cycle_ts = datetime.now(timezone.utc)
             cycle_values: dict[str, dict[str, Any]] = {}
+            reads_skipped = 0
 
-            for tag in tags:
-                attempts = 0
-                value = None
-                quality = "BAD"
-
-                while attempts < 3:
-                    try:
-                        value = read_tag(mb_client, tag)
-                        quality = "GOOD"
-                        break
-                    except Exception as ex:
-                        attempts += 1
-                        struct_log(
-                            "warning",
-                            "read.failed",
-                            tag=tag.name,
-                            attempt=attempts,
-                            error=str(ex),
-                        )
-                        time.sleep(5)
+            # read_cycle corta el ciclo si un tag agota sus reintentos por excepción
+            # (PLC caído): los tags que faltan no se intentan. Ver spec 003.
+            for tag, result in read_cycle(
+                lambda t: read_tag(mb_client, t), tags, on_failure=log_read_failure
+            ):
+                value = result.value
+                attempts = result.attempts
+                quality = "GOOD"
 
                 if value is None:
                     cycle_values[tag.name] = {
@@ -191,6 +190,9 @@ def main() -> None:
                         "source": source_name,
                         "attempts": attempts,
                     }
+                    if result.skipped:
+                        reads_skipped += 1
+                        cycle_values[tag.name]["reason"] = "plc_unreachable"
                     struct_log("warning", "value.missing", tag=tag.name)
                     continue
 
@@ -236,6 +238,14 @@ def main() -> None:
                         tag=tag.name,
                         error=str(ex),
                     )
+
+            if reads_skipped:
+                struct_log(
+                    "warning",
+                    "cycle.reads_skipped",
+                    skipped=reads_skipped,
+                    reason="plc_unreachable",
+                )
 
             if aas_updater is not None:
                 aas_values = {

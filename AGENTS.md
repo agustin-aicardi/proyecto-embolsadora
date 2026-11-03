@@ -28,7 +28,7 @@ Setup completo y variables en [`docs/development.md`](./docs/development.md) y [
 - Un tipo de tag nuevo se agrega en `modbus_reader.py` y `parsers.py` **con test en `tests/`**. Hoy solo hay `bool`, `int16` y `float32`; `int32` falta aunque la constitution lo exige.
 - Logs estructurados JSON vía `struct_log`; no usar `print` en el ciclo principal.
 - **Nunca commitear `.env`, `.venv/`, `__pycache__/`, binarios ni logs.** El `.env` de este repo estuvo versionado: su historial hay que considerarlo expuesto; no pegues ni muestres credenciales de ahí.
-- Los defectos conocidos contra la constitution (sin `int32`, sin reintento de escritura en InfluxDB, ciclo bloqueado hasta 15 s por tag caído, sin healthcheck) están en [`specs/README.md`](./specs/README.md). No los «arregles de paso» dentro de otro cambio: abrí una spec.
+- Los defectos conocidos contra la constitution (sin `int32`, sin reintento de escritura en InfluxDB, sin healthcheck) están en [`specs/README.md`](./specs/README.md). No los «arregles de paso» dentro de otro cambio: abrí una spec.
 
 ## Specs
 
