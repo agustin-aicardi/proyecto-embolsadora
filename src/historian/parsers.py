@@ -13,6 +13,25 @@ def int16_from_register(reg: int) -> int:
     return reg
 
 
+def int32_from_registers(r0: int, r1: int, byteorder: str = "big") -> int:
+    """Convert two 16-bit registers into a signed int32.
+
+    r0 and r1 are the registers in the order they were read (address, address + 1).
+    For byteorder 'big' (the Modbus default), r0 is the high word. For 'little',
+    the words are swapped: r0 is the low word. Bytes inside each word are always
+    big-endian, as Modbus defines.
+    """
+    r0 = int(r0) & 0xFFFF
+    r1 = int(r1) & 0xFFFF
+    if byteorder == "big":
+        raw = (r0 << 16) | r1
+    else:
+        raw = (r1 << 16) | r0
+    if raw & 0x80000000:
+        return raw - 0x100000000
+    return raw
+
+
 def float32_from_registers(hi: int, lo: int, byteorder: str = "big") -> float:
     """Convert two 16-bit registers into a float32.
 

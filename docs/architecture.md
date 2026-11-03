@@ -27,7 +27,7 @@ El historian es **un solo proceso de un solo hilo** (`python -m src.historian.ma
 |---|---|
 | `main.py` | Bucle principal: carga config por variables de entorno, lee, escribe, actualiza el AAS y emite los logs JSON |
 | `tag_loader.py`, `models.py` | Cargan `tags.yaml` como `TagConfig` (`name`, `type`, `address`, `unit`, `byteorder`, `scale`) |
-| `modbus_reader.py` | `read_tag`: una lectura según el tipo (`bool`, `int16`, `float32`); otro tipo lanza `ValueError` |
+| `modbus_reader.py` | `read_tag`: una lectura según el tipo (`bool`, `int16`, `int32`, `float32`); otro tipo lanza `UnsupportedTagType` (error de configuración, no reintenta) |
 | `parsers.py` | Conversión pura registros → valor (signo de int16, float32 con orden de palabras). Es lo más testeado |
 | `mock_modbus.py` | PLC simulado (`MODBUS_HOST=mock`) |
 | `influx_writer.py` | Un `Point` por valor, escritura síncrona |
@@ -55,4 +55,4 @@ El historian es **un solo proceso de un solo hilo** (`python -m src.historian.ma
 
 ## Lo que este diseño no tiene
 
-Contrastado con la constitution (detalle en la spec 001): no hay tipo `int32`, no hay métricas. La constitution es la autoridad; estos puntos están en el índice de specs como pendientes.
+Contrastado con la constitution (detalle en la spec 001): ya no quedan desvíos abiertos contra la constitution (las specs 002 a 006 los cerraron). Sigue sin haber métricas ni buffer de puntos ante un corte largo de InfluxDB, y `byteorder: little` de `float32` tiene un defecto conocido; los tres figuran en el índice de specs como pendientes.
