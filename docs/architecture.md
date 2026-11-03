@@ -38,7 +38,7 @@ El historian es **un solo proceso de un solo hilo** (`python -m src.historian.ma
 
 1. Por cada tag: leer con hasta 3 intentos y 5 s de espera entre ellos. Sin valor → calidad `BAD` y se sigue. Si un tag agota los intentos por excepción (PLC sin respuesta), **los tags restantes de ese ciclo no se leen** (`reason: plc_unreachable`, log `cycle.reads_skipped`) y el ciclo siguiente reintenta desde el primero ([spec 003](../specs/003-ciclo-acotado-plc-caido/spec.md)). La lógica está en `read_policy.py`.
 2. Buscar el tag en `aas_mapping.yaml`. Sin entrada habilitada → `mapping.missing_for_tag`, no se escribe.
-3. Escribir el punto en InfluxDB. Si falla → calidad `INFLUX_WRITE_FAILED` y se sigue (no se reintenta).
+3. Escribir el punto en InfluxDB. Un error transitorio (red, 5xx, 429) se reintenta hasta 3 veces cada 5 s; un 4xx (p. ej. 401) no. Si no se logra → calidad `INFLUX_WRITE_FAILED` y se sigue. Si una escritura agota los reintentos, las demás de ese ciclo se saltan (`reason: influx_unreachable`, log `cycle.writes_skipped`) ([spec 004](../specs/004-reintento-escritura-influx/spec.md)). La lógica está en `write_policy.py`. **Un corte largo de InfluxDB sigue perdiendo puntos: no hay buffer.**
 4. Si el AAS updater está activo: actualizar el XML con los valores `GOOD` y guardarlo completo.
 5. Registrar `cycle.completed` con `tags_ok` y `tags_bad`, y dormir `POLL_INTERVAL`.
 
@@ -55,4 +55,4 @@ El historian es **un solo proceso de un solo hilo** (`python -m src.historian.ma
 
 ## Lo que este diseño no tiene
 
-Contrastado con la constitution (detalle en la spec 001): no hay tipo `int32`, no se reintenta la escritura en InfluxDB, no hay healthcheck ni métricas. La constitution es la autoridad; estos puntos están en el índice de specs como pendientes.
+Contrastado con la constitution (detalle en la spec 001): no hay tipo `int32`, no hay healthcheck ni métricas. La constitution es la autoridad; estos puntos están en el índice de specs como pendientes.

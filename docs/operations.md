@@ -58,6 +58,7 @@ El historian **no expone ningún endpoint** (ni salud ni métricas). Lo único o
 | El log repite `read.failed` | PLC inalcanzable o dirección/tipo mal en `tags.yaml` | Verificar `MODBUS_HOST` y `tags.yaml`. Con `MODBUS_HOST=mock` no debería pasar |
 | Los ciclos tardan ~10 s y hay `cycle.reads_skipped` / `read.failed` | El PLC (o Modbus) no responde: el primer tag agota 3 intentos y el resto se salta ese ciclo | Revisar `MODBUS_HOST`/`MODBUS_PORT` y la red; cuando el PLC vuelva, el siguiente ciclo lee todo |
 | El contenedor se reinicia en bucle con `config.invalid` | Falta `INFLUX_TOKEN` (o está vacío): el historian no arranca sin él | Definirlo en `.env` y reiniciar |
+| `influx.write_retry` y después `cycle.writes_skipped` | InfluxDB no responde (red, 5xx): se reintenta 3 veces cada 5 s y el resto del ciclo se salta; el ciclo dura ~10 s | Revisar que InfluxDB esté arriba y `INFLUX_URL`. Los puntos de los ciclos con fallo **no se recuperan** |
 | `influx.write_failed` con 401 | `INFLUX_TOKEN` definido pero incorrecto | Corregirlo (debe ser el mismo que usó InfluxDB al inicializarse) y reiniciar |
 | `Could not save environment to file .../model_persistence.xml` en FA³ST | El volumen de datos de FA³ST es de root | Aviso no fatal; no afecta al historian |
 | `curl http://localhost:8081/...` falla con `HTTP/0.9` | FA³ST sirve HTTPS con certificado autofirmado, API v3.1 | `curl -sk https://localhost:8081/api/v3.1/submodels` |

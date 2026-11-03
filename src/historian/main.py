@@ -16,6 +16,7 @@ from .config import ConfigError, require_env
 from .influx_writer import InfluxWriter
 from .modbus_reader import read_tag
 from .read_policy import read_cycle
+from .write_policy import WriteGate
 from .tag_loader import load_tags
 from .aas_updater import AASUpdater
 
@@ -172,6 +173,7 @@ def main() -> None:
             cycle_ts = datetime.now(timezone.utc)
             cycle_values: dict[str, dict[str, Any]] = {}
             reads_skipped = 0
+            write_gate = WriteGate()
 
             # read_cycle corta el ciclo si un tag agota sus reintentos por excepción
             # (PLC caído): los tags que faltan no se intentan. Ver spec 003.
@@ -212,14 +214,28 @@ def main() -> None:
                 measurement, historian_tags = build_historian_config(mapping_doc, mapping_entry)
                 field_name = mapping_entry["name"]
 
-                try:
-                    influx_writer.write_value(
+                def log_write_failure(attempt: int, ex: Exception, tag_name: str = tag.name) -> None:
+                    struct_log(
+                        "warning",
+                        "influx.write_retry",
+                        tag=tag_name,
+                        attempt=attempt,
+                        error=str(ex),
+                    )
+
+                # La escritura se reintenta ante errores transitorios; si InfluxDB no
+                # responde, las demás de este ciclo se saltan. Ver spec 004.
+                write_result = write_gate.write(
+                    lambda: influx_writer.write_value(
                         measurement=measurement,
                         field_name=field_name,
                         value=value,
                         ts=cycle_ts,
                         tags=historian_tags,
-                    )
+                    ),
+                    on_failure=log_write_failure,
+                )
+                if write_result.ok:
                     struct_log(
                         "info",
                         "point.written",
@@ -230,14 +246,26 @@ def main() -> None:
                         quality=quality,
                         source=source_name,
                     )
-                except Exception as ex:
+                else:
                     cycle_values[tag.name]["quality"] = "INFLUX_WRITE_FAILED"
+                    if write_result.skipped:
+                        cycle_values[tag.name]["reason"] = "influx_unreachable"
                     struct_log(
                         "error",
                         "influx.write_failed",
                         tag=tag.name,
-                        error=str(ex),
+                        attempts=write_result.attempts,
+                        skipped=write_result.skipped,
+                        error=str(write_result.error) if write_result.error else None,
                     )
+
+            if write_gate.skipped:
+                struct_log(
+                    "warning",
+                    "cycle.writes_skipped",
+                    skipped=write_gate.skipped,
+                    reason="influx_unreachable",
+                )
 
             if reads_skipped:
                 struct_log(
