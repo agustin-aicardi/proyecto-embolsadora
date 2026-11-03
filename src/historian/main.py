@@ -12,6 +12,7 @@ import yaml
 from dotenv import load_dotenv
 from pymodbus.client import ModbusTcpClient
 
+from .config import ConfigError, require_env
 from .influx_writer import InfluxWriter
 from .modbus_reader import read_tag
 from .tag_loader import load_tags
@@ -79,7 +80,11 @@ def main() -> None:
     poll_interval = float(os.environ.get("POLL_INTERVAL", "1.0"))
 
     influx_url = os.environ.get("INFLUX_URL", "http://influxdb:8086")
-    influx_token = os.environ.get("INFLUX_TOKEN", "my-token")
+    try:
+        influx_token = require_env(os.environ, "INFLUX_TOKEN")
+    except ConfigError as ex:
+        struct_log("error", "config.invalid", error=str(ex))
+        raise SystemExit(1)
     influx_org = os.environ.get("INFLUX_ORG", "org")
     influx_bucket = os.environ.get("INFLUX_BUCKET", "bucket")
 

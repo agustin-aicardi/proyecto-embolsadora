@@ -67,7 +67,7 @@ Desvíos entre el código y la constitution (`.specify/memory/constitution.md`),
 - **Tipo `int32` no soportado.** La constitution lo declara obligatorio («`bool`, `int16`, `int32` y `float32`»); `read_tag` lanza `ValueError` para cualquier tipo que no sea `bool`, `int16` o `float32`. Ningún tag actual lo usa.
 - **Sin reintento de escritura en InfluxDB.** El principio V exige reintentos de 5 s en Modbus **y** en InfluxDB; el código reintenta solo la lectura Modbus. Un fallo de escritura pierde el punto de ese ciclo.
 - **Un tag caído frena el ciclo.** 3 intentos × 5 s = hasta 15 s por tag que falla, en serie. Con un PLC caído y 18 tags, un ciclo puede tardar más de 4 minutos y retrasa la escritura de los tags que vienen después en la lista.
-- **Token por defecto.** Si falta `INFLUX_TOKEN`, el código usa `my-token` en vez de fallar.
+- **Token por defecto.** ~~Si falta `INFLUX_TOKEN`, el código usa `my-token` en vez de fallar.~~ Corregido en la [spec 002](../002-influx-token-obligatorio/spec.md).
 - **Sin healthcheck ni métricas.** El proceso no expone ningún endpoint; un historian colgado solo se ve en los logs.
 - **Sin evidencia de PLC real** (CE-003).
 - ¿`AASUpdater` sigue haciendo falta ahora que el edge lee el catálogo directamente? Con el XML reescrito a ~548 KB por ciclo, el bundle lo deja apagado por defecto.
