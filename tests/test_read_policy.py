@@ -1,3 +1,4 @@
+from src.historian.modbus_reader import UnsupportedTagType
 from src.historian.read_policy import read_cycle, read_with_retry
 
 
@@ -98,3 +99,17 @@ def test_es_perezoso_el_llamador_puede_escribir_entre_lecturas():
     gen = read_cycle(read, ["a", "b"], sleep=lambda s: None)
     next(gen)
     assert leidos == ["a"]  # "b" todavía no se leyó
+
+
+def test_tipo_de_tag_no_soportado_no_se_reintenta_ni_cuenta_como_plc_caido():
+    sleeps = []
+    res = read_with_retry(_scripted([UnsupportedTagType("int64")]), "t", sleep=sleeps.append)
+    assert res.value is None and not res.exhausted and not res.skipped
+    assert sleeps == []
+
+
+def test_un_tag_mal_configurado_no_tira_abajo_a_los_demas():
+    read = _scripted([UnsupportedTagType("int64"), 2.0, 3.0])
+    out = list(read_cycle(read, ["mal", "b", "c"], sleep=lambda s: None))
+    assert [r.value for _, r in out] == [None, 2.0, 3.0]
+    assert not any(r.skipped for _, r in out)

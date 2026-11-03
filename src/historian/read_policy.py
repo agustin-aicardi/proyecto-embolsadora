@@ -10,6 +10,8 @@ from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
 from typing import Any
 
+from .modbus_reader import UnsupportedTagType
+
 ATTEMPTS = 3
 DELAY_S = 5.0
 
@@ -39,11 +41,17 @@ def read_with_retry(
     No espera después del último intento: no hay nada que reintentar. Una lectura
     que devuelve `None` (respuesta de error del PLC, no una excepción) NO se
     reintenta ni cuenta como PLC caído: el PLC contestó, el problema es del tag.
+    Lo mismo vale para un tipo de tag no soportado (`UnsupportedTagType`): es un error
+    de configuración que esperar no arregla, y no dice nada sobre el PLC.
     """
     failed = 0
     while failed < attempts:
         try:
             return ReadResult(read(tag), failed)
+        except UnsupportedTagType as ex:
+            if on_failure is not None:
+                on_failure(tag, failed + 1, ex)
+            return ReadResult(None, failed + 1)
         except Exception as ex:
             failed += 1
             if on_failure is not None:

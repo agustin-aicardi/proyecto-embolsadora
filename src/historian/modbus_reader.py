@@ -4,6 +4,10 @@ from .models import TagConfig
 from .parsers import int16_from_register, float32_from_registers, bool_from_bits
 
 
+class UnsupportedTagType(ValueError):
+    """El tag declara un tipo que el historian no sabe leer: error de configuración, no del PLC."""
+
+
 def read_tag(client, tag: TagConfig) -> Optional[float]:
     """Read a tag value from Modbus according to its configuration."""
 
@@ -26,7 +30,7 @@ def read_tag(client, tag: TagConfig) -> Optional[float]:
         value = float32_from_registers(rr.registers[0], rr.registers[1], tag.byteorder)
 
     else:
-        raise ValueError(f"Unsupported tag type: {tag.type}")
+        raise UnsupportedTagType(f"Unsupported tag type: {tag.type}")
 
     if tag.scale:
         value *= tag.scale

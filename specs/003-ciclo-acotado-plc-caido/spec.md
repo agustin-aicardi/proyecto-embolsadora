@@ -37,11 +37,12 @@ Entra: la política de lectura por ciclo (reintentos y corte con el PLC caído) 
 - **RF-003** `origen: original` — Cuando un tag agota sus reintentos por excepción, el PLC se considera caído **para el resto de ese ciclo**: los tags restantes NO DEBEN leerse; DEBEN quedar con calidad `BAD` y `reason: plc_unreachable`, y el ciclo DEBE registrar `cycle.reads_skipped` con la cantidad.
 - **RF-004** `origen: original` — El ciclo siguiente DEBE volver a intentar desde el primer tag; el estado «caído» no se arrastra entre ciclos.
 - **RF-005** `origen: original` — Una lectura que devuelve `None` (respuesta de error del PLC: el PLC contestó, el problema es de ese tag) NO DEBE reintentarse ni contar como PLC caído: los demás tags se siguen leyendo.
-- **RF-006** `origen: original` — Con todo funcionando (o con el mock), el comportamiento y lo escrito en InfluxDB NO DEBEN cambiar.
+- **RF-006** `origen: original` — Un tipo de tag no soportado (`UnsupportedTagType`, error de configuración) NO DEBE reintentarse ni contar como PLC caído: los demás tags se siguen leyendo.
+- **RF-007** `origen: original` — Con todo funcionando (o con el mock), el comportamiento y lo escrito en InfluxDB NO DEBEN cambiar.
 
 ## Criterios de éxito
 
-- **CE-001** — `tests/test_read_policy.py` (9 tests) pasa con `python3 run_tests.py`. **Cumplido.**
+- **CE-001** — `tests/test_read_policy.py` (11 tests) pasa con `python3 run_tests.py`. **Cumplido.**
 - **CE-002** — Con un cliente que siempre lanza excepción, un ciclo de 18 tags dura `(3 − 1) × 5 = 10 s` en vez de ~270 s. **Cumplido** (corrida de `main()` con un cliente falso: 17 tags saltados por ciclo y ciclos separados por 10 s).
 - **CE-003** — Con el mock, `main()` escribe los 18 tags por ciclo como antes. **Cumplido** (36 puntos en 2 ciclos, 18/18 `GOOD`).
 - **CE-004** — Contra un PLC Modbus real que se desconecta y vuelve. **Sin evidencia**: nunca se probó contra uno.
