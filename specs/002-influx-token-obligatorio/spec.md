@@ -38,7 +38,7 @@ Entra: `INFLUX_TOKEN` pasa a ser obligatorio. No entra: el resto de las variable
 ## Criterios de éxito
 
 - **CE-001** — Los tests de `require_env` (`tests/test_config.py`) pasan con `python3 run_tests.py`.
-- **CE-002** — Arrancar el contenedor sin `INFLUX_TOKEN` termina de inmediato con `config.invalid` en el log. **Pendiente de verificar con Docker.**
+- **CE-002** — Arrancar el contenedor sin `INFLUX_TOKEN` termina de inmediato con `config.invalid` en el log. **Cumplido** (imagen construida y corrida con `docker run` sin token: `config.invalid`, exit 1).
 - **CE-003** — El job `integration` de la CI (que define `INFLUX_TOKEN=ci-token`) sigue escribiendo puntos. **Se verifica en la CI de este PR.**
 
 ## Decisiones

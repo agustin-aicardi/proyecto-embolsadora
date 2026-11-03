@@ -55,4 +55,4 @@ El historian es **un solo proceso de un solo hilo** (`python -m src.historian.ma
 
 ## Lo que este diseño no tiene
 
-Contrastado con la constitution (detalle en la spec 001): no hay tipo `int32`, no hay healthcheck ni métricas. La constitution es la autoridad; estos puntos están en el índice de specs como pendientes.
+Contrastado con la constitution (detalle en la spec 001): no hay tipo `int32`, no hay métricas. La constitution es la autoridad; estos puntos están en el índice de specs como pendientes.

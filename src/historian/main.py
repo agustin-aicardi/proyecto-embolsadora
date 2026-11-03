@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from pymodbus.client import ModbusTcpClient
 
 from .config import ConfigError, require_env
+from .heartbeat import beat, heartbeat_path
 from .influx_writer import InfluxWriter
 from .modbus_reader import read_tag
 from .read_policy import read_cycle
@@ -89,6 +90,9 @@ def main() -> None:
         raise SystemExit(1)
     influx_org = os.environ.get("INFLUX_ORG", "org")
     influx_bucket = os.environ.get("INFLUX_BUCKET", "bucket")
+
+    heartbeat_file = heartbeat_path(os.environ)
+    heartbeat_failed = False
 
     aas_xml_path = os.environ.get("AAS_XML_PATH")
     aas_mapping_path = os.environ.get("AAS_MAPPING_PATH")
@@ -302,6 +306,15 @@ def main() -> None:
                 tags_ok=len([v for v in cycle_values.values() if v["quality"] == "GOOD"]),
                 tags_bad=len([v for v in cycle_values.values() if v["quality"] != "GOOD"]),
             )
+
+            # Latido para el HEALTHCHECK de Docker (spec 005). Un fallo al escribirlo
+            # no debe tirar el historian: se avisa una sola vez.
+            try:
+                beat(heartbeat_file)
+            except OSError as ex:
+                if not heartbeat_failed:
+                    heartbeat_failed = True
+                    struct_log("warning", "heartbeat.failed", path=heartbeat_file, error=str(ex))
 
             time.sleep(poll_interval)
 

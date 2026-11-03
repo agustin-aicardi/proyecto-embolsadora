@@ -60,6 +60,7 @@ Todas se leen en `src/historian/main.py`; el ejemplo comentado está en [`.env.e
 | `HISTORIAN_TAGS` | `./tags.yaml` | Qué leer del PLC |
 | `MODBUS_HOST` / `MODBUS_PORT` | `plc` / `502` | `mock` simula el PLC |
 | `POLL_INTERVAL` | `1.0` | Segundos entre ciclos |
+| `HEARTBEAT_FILE` / `HEALTH_MAX_AGE_S` | tmp del sistema + `historian.alive` / mayor entre 120 y 3 × `POLL_INTERVAL` | Archivo de latido y su antigüedad máxima para el `HEALTHCHECK` de Docker |
 | `INFLUX_URL` / `INFLUX_ORG` / `INFLUX_BUCKET` | `http://influxdb:8086` / `org` / `bucket` | Destino |
 | `INFLUX_TOKEN` | — (obligatoria) | Sin ella el historian no arranca (`config.invalid`, salida 1) |
 | `AAS_MAPPING_PATH` | — | Cómo etiquetar cada tag |
