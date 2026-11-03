@@ -61,7 +61,7 @@ Todas se leen en `src/historian/main.py`; el ejemplo comentado está en [`.env.e
 | `MODBUS_HOST` / `MODBUS_PORT` | `plc` / `502` | `mock` simula el PLC |
 | `POLL_INTERVAL` | `1.0` | Segundos entre ciclos |
 | `INFLUX_URL` / `INFLUX_ORG` / `INFLUX_BUCKET` | `http://influxdb:8086` / `org` / `bucket` | Destino |
-| `INFLUX_TOKEN` | `my-token` | **Siempre definirlo**: el valor por defecto no falla, solo no autentica |
+| `INFLUX_TOKEN` | — (obligatoria) | Sin ella el historian no arranca (`config.invalid`, salida 1) |
 | `AAS_MAPPING_PATH` | — | Cómo etiquetar cada tag |
 | `AAS_XML_PATH`, `AAS_OUTPUT_PATH` | — | Con las tres `AAS_*` activa el AAS updater |
 

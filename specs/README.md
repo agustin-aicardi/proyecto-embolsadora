@@ -6,13 +6,14 @@ last_reviewed: 2026-10-29
 
 # Specs de `proyecto-embolsadora`
 
-Índice curado a mano. La referencia entre repos es siempre `<repo>#NNN` (por ejemplo `proyecto-embolsadora#001`). El próximo número libre es **002**.
+Índice curado a mano. La referencia entre repos es siempre `<repo>#NNN` (por ejemplo `proyecto-embolsadora#001`). El próximo número libre es **003**.
 
 ## Índice
 
 | # | Título | Tier | Estado | Veredicto | Fecha | PRs |
 |---|---|---|---|---|---|---|
 | [001](./001-historian-semantico/spec.md) | Historian semántico — PLC a InfluxDB y AAS | change | done | A | 2026-10-29 | — |
+| [002](./002-influx-token-obligatorio/spec.md) | `INFLUX_TOKEN` obligatorio, sin valor por defecto | change | in-progress | — | 2026-11-02 | — |
 
 **Veredicto** = resultado de la reconciliación contra el código (harness documental §6.1): A implementado como se especificó, B implementado distinto, C descartado, D todavía querido, E basura. La 001 es **retrospectiva**: se escribió leyendo el código, así que su A es trivial (todos sus `RF` son `origen: derivado`). Lo que importa de ella son los desvíos contra la constitution.
 
