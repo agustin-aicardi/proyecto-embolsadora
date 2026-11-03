@@ -63,5 +63,5 @@ El historian **no expone ningún endpoint** (ni salud ni métricas). Lo único o
 
 ## Seguridad
 
-- `.env` **estuvo versionado** en este repo y lo conserva el historial de git aunque ya no se rastree. **Toda credencial que haya contenido debe considerarse expuesta y rotarse** (en particular el token de InfluxDB). Este repo es público.
+- `.env` **estuvo versionado** en este repo y el historial de git lo conserva aunque ya no se rastree. Este repo es público, así que toda credencial que ese archivo haya contenido hay que tratarla como expuesta. Dejar de versionarlo evita nuevas filtraciones; **no** limpia las anteriores.
 - No poner credenciales reales en `.env.example`, docs ni commits.
