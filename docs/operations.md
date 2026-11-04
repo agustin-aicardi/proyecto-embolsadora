@@ -57,7 +57,8 @@ El historian **no expone ningún endpoint** (ni salud ni métricas). Lo único o
 | No hay puntos en InfluxDB y los logs dicen `mapping.missing_for_tag` | Falta `AAS_MAPPING_PATH` o el archivo no está montado | Verificar la variable y el volumen de `aas_mapping.yaml` |
 | El log repite `read.failed` | PLC inalcanzable o dirección/tipo mal en `tags.yaml` | Verificar `MODBUS_HOST` y `tags.yaml`. Con `MODBUS_HOST=mock` no debería pasar |
 | Los ciclos se enlentecen mucho | Hay tags fallando: cada uno cuesta hasta 15 s (3 × 5 s) y se leen en serie | Arreglar la lectura o sacar el tag de `tags.yaml` |
-| `influx.write_failed` con 401 | `INFLUX_TOKEN` incorrecto (el valor por defecto `my-token` no autentica) | Definir `INFLUX_TOKEN` y reiniciar |
+| El contenedor se reinicia en bucle con `config.invalid` | Falta `INFLUX_TOKEN` (o está vacío): el historian no arranca sin él | Definirlo en `.env` y reiniciar |
+| `influx.write_failed` con 401 | `INFLUX_TOKEN` definido pero incorrecto | Corregirlo (debe ser el mismo que usó InfluxDB al inicializarse) y reiniciar |
 | `Could not save environment to file .../model_persistence.xml` en FA³ST | El volumen de datos de FA³ST es de root | Aviso no fatal; no afecta al historian |
 | `curl http://localhost:8081/...` falla con `HTTP/0.9` | FA³ST sirve HTTPS con certificado autofirmado, API v3.1 | `curl -sk https://localhost:8081/api/v3.1/submodels` |
 
