@@ -13,8 +13,11 @@ from dotenv import load_dotenv
 from pymodbus.client import ModbusTcpClient
 
 from .config import ConfigError, require_env
+from .heartbeat import beat, heartbeat_path
 from .influx_writer import InfluxWriter
 from .modbus_reader import read_tag
+from .read_policy import read_cycle
+from .write_policy import WriteGate
 from .tag_loader import load_tags
 from .aas_updater import AASUpdater
 
@@ -88,6 +91,9 @@ def main() -> None:
     influx_org = os.environ.get("INFLUX_ORG", "org")
     influx_bucket = os.environ.get("INFLUX_BUCKET", "bucket")
 
+    heartbeat_file = heartbeat_path(os.environ)
+    heartbeat_failed = False
+
     aas_xml_path = os.environ.get("AAS_XML_PATH")
     aas_mapping_path = os.environ.get("AAS_MAPPING_PATH")
     aas_output_path = os.environ.get("AAS_OUTPUT_PATH")
@@ -157,31 +163,30 @@ def main() -> None:
             error=str(ex),
         )
 
+    def log_read_failure(tag: Any, attempt: int, ex: Exception) -> None:
+        struct_log(
+            "warning",
+            "read.failed",
+            tag=tag.name,
+            attempt=attempt,
+            error=str(ex),
+        )
+
     try:
         while True:
             cycle_ts = datetime.now(timezone.utc)
             cycle_values: dict[str, dict[str, Any]] = {}
+            reads_skipped = 0
+            write_gate = WriteGate()
 
-            for tag in tags:
-                attempts = 0
-                value = None
-                quality = "BAD"
-
-                while attempts < 3:
-                    try:
-                        value = read_tag(mb_client, tag)
-                        quality = "GOOD"
-                        break
-                    except Exception as ex:
-                        attempts += 1
-                        struct_log(
-                            "warning",
-                            "read.failed",
-                            tag=tag.name,
-                            attempt=attempts,
-                            error=str(ex),
-                        )
-                        time.sleep(5)
+            # read_cycle corta el ciclo si un tag agota sus reintentos por excepción
+            # (PLC caído): los tags que faltan no se intentan. Ver spec 003.
+            for tag, result in read_cycle(
+                lambda t: read_tag(mb_client, t), tags, on_failure=log_read_failure
+            ):
+                value = result.value
+                attempts = result.attempts
+                quality = "GOOD"
 
                 if value is None:
                     cycle_values[tag.name] = {
@@ -191,6 +196,9 @@ def main() -> None:
                         "source": source_name,
                         "attempts": attempts,
                     }
+                    if result.skipped:
+                        reads_skipped += 1
+                        cycle_values[tag.name]["reason"] = "plc_unreachable"
                     struct_log("warning", "value.missing", tag=tag.name)
                     continue
 
@@ -210,14 +218,28 @@ def main() -> None:
                 measurement, historian_tags = build_historian_config(mapping_doc, mapping_entry)
                 field_name = mapping_entry["name"]
 
-                try:
-                    influx_writer.write_value(
+                def log_write_failure(attempt: int, ex: Exception, tag_name: str = tag.name) -> None:
+                    struct_log(
+                        "warning",
+                        "influx.write_retry",
+                        tag=tag_name,
+                        attempt=attempt,
+                        error=str(ex),
+                    )
+
+                # La escritura se reintenta ante errores transitorios; si InfluxDB no
+                # responde, las demás de este ciclo se saltan. Ver spec 004.
+                write_result = write_gate.write(
+                    lambda: influx_writer.write_value(
                         measurement=measurement,
                         field_name=field_name,
                         value=value,
                         ts=cycle_ts,
                         tags=historian_tags,
-                    )
+                    ),
+                    on_failure=log_write_failure,
+                )
+                if write_result.ok:
                     struct_log(
                         "info",
                         "point.written",
@@ -228,14 +250,34 @@ def main() -> None:
                         quality=quality,
                         source=source_name,
                     )
-                except Exception as ex:
+                else:
                     cycle_values[tag.name]["quality"] = "INFLUX_WRITE_FAILED"
+                    if write_result.skipped:
+                        cycle_values[tag.name]["reason"] = "influx_unreachable"
                     struct_log(
                         "error",
                         "influx.write_failed",
                         tag=tag.name,
-                        error=str(ex),
+                        attempts=write_result.attempts,
+                        skipped=write_result.skipped,
+                        error=str(write_result.error) if write_result.error else None,
                     )
+
+            if write_gate.skipped:
+                struct_log(
+                    "warning",
+                    "cycle.writes_skipped",
+                    skipped=write_gate.skipped,
+                    reason="influx_unreachable",
+                )
+
+            if reads_skipped:
+                struct_log(
+                    "warning",
+                    "cycle.reads_skipped",
+                    skipped=reads_skipped,
+                    reason="plc_unreachable",
+                )
 
             if aas_updater is not None:
                 aas_values = {
@@ -264,6 +306,15 @@ def main() -> None:
                 tags_ok=len([v for v in cycle_values.values() if v["quality"] == "GOOD"]),
                 tags_bad=len([v for v in cycle_values.values() if v["quality"] != "GOOD"]),
             )
+
+            # Latido para el HEALTHCHECK de Docker (spec 005). Un fallo al escribirlo
+            # no debe tirar el historian: se avisa una sola vez.
+            try:
+                beat(heartbeat_file)
+            except OSError as ex:
+                if not heartbeat_failed:
+                    heartbeat_failed = True
+                    struct_log("warning", "heartbeat.failed", path=heartbeat_file, error=str(ex))
 
             time.sleep(poll_interval)
 

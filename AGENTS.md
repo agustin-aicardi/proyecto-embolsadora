@@ -25,10 +25,10 @@ Setup completo y variables en [`docs/development.md`](./docs/development.md) y [
 - Los servicios del compose se hablan por **nombre de servicio**, nunca por IP ni `localhost` (principio III). Imágenes `slim`, compatibles con ARM64 (principio IV).
 - `aas_mapping.yaml` y el esquema de InfluxDB son un **contrato externo**: los consumen `embolsadora-edge` y, vía el cloud, el frontend (`aasPath`). Un cambio de nombre o de estructura requiere coordinar con esos repos; no renombrar properties «por prolijidad».
 - Sin `AAS_MAPPING_PATH` el historian no escribe nada: no hagas que parezca que funciona sin él.
-- Un tipo de tag nuevo se agrega en `modbus_reader.py` y `parsers.py` **con test en `tests/`**. Hoy solo hay `bool`, `int16` y `float32`; `int32` falta aunque la constitution lo exige.
+- Un tipo de tag nuevo se agrega en `modbus_reader.py` y `parsers.py` **con test en `tests/`**. Hoy hay `bool`, `int16`, `int32` y `float32`. Ojo: `byteorder: little` de `float32` tiene un defecto conocido (ver `specs/README.md`).
 - Logs estructurados JSON vía `struct_log`; no usar `print` en el ciclo principal.
 - **Nunca commitear `.env`, `.venv/`, `__pycache__/`, binarios ni logs.** El `.env` de este repo estuvo versionado: su historial hay que considerarlo expuesto; no pegues ni muestres credenciales de ahí.
-- Los defectos conocidos contra la constitution (sin `int32`, sin reintento de escritura en InfluxDB, ciclo bloqueado hasta 15 s por tag caído, sin healthcheck) están en [`specs/README.md`](./specs/README.md). No los «arregles de paso» dentro de otro cambio: abrí una spec.
+- Los pendientes y defectos conocidos están en [`specs/README.md`](./specs/README.md). No los «arregles de paso» dentro de otro cambio: abrí una spec.
 
 ## Specs
 
