@@ -1,0 +1,10 @@
+services:
+  influxdb:
+    volumes:
+      - proyecto-embolsadora_influxdb_nuevo:/var/lib/influxdb2
+    ports: !override
+      - "127.0.0.1:8086:8086"
+
+volumes:
+  proyecto-embolsadora_influxdb_nuevo:
+    external: true

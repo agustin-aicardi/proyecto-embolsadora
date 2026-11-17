@@ -20,6 +20,8 @@ from .read_policy import read_cycle
 from .write_policy import WriteGate
 from .tag_loader import load_tags
 from .aas_updater import AASUpdater
+from .basyx_updater import BaSyxUpdater
+from .basyx_worker import BaSyxWorker
 
 try:
     from .mock_modbus import MockModbusClient
@@ -128,6 +130,33 @@ def main() -> None:
             mapping_path=aas_mapping_path,
             tags_path=cfg_path,
         )
+
+    basyx_updater = None
+    basyx_url = os.environ.get("BASYX_URL")
+    if basyx_url and aas_xml_path and mapping_doc:
+        try:
+            basyx_updater = BaSyxUpdater(
+                base_url=basyx_url,
+                aas_xml_path=aas_xml_path,
+                mapping_doc=mapping_doc,
+            )
+        except Exception as ex:
+            struct_log(
+                "error",
+                "basyx.initialization_failed",
+                error=str(ex),
+            )
+
+    basyx_worker = None
+    if basyx_updater is not None:
+        basyx_worker = BaSyxWorker(
+            updater=basyx_updater,
+            on_error=lambda ex: struct_log(
+                "error", "basyx.update_failed", error=str(ex)
+            ),
+        )
+        basyx_worker.start()
+        struct_log("info", "basyx.worker_started")
 
     struct_log(
         "info",
@@ -299,6 +328,9 @@ def main() -> None:
                     except Exception as ex:
                         struct_log("error", "aas.update_failed", error=str(ex))
 
+                    if basyx_worker is not None:
+                        basyx_worker.submit(aas_values)
+
             struct_log(
                 "info",
                 "cycle.completed",
@@ -321,6 +353,8 @@ def main() -> None:
     except KeyboardInterrupt:
         struct_log("info", "historian.stopped")
     finally:
+        if basyx_worker is not None:
+            basyx_worker.stop()
         try:
             mb_client.close()
         except Exception:
