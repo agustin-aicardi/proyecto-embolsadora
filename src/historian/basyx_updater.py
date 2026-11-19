@@ -3,16 +3,24 @@ from __future__ import annotations
 import base64
 import json
 import urllib.parse
+import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 AAS_NS = {"aas": "https://admin-shell.io/aas/3/0"}
 
 
 class BaSyxUpdater:
-    def __init__(self, base_url: str, aas_xml_path: str, mapping_doc: dict[str, Any]):
+    def __init__(
+        self,
+        base_url: str,
+        aas_xml_path: str,
+        mapping_doc: dict[str, Any],
+        resync_interval: float = 60.0,
+        clock: Callable[[], float] = time.monotonic,
+    ):
         self.base_url = base_url.rstrip("/")
         self.aas_xml_path = Path(aas_xml_path)
         self.mapping_doc = mapping_doc
@@ -21,6 +29,13 @@ class BaSyxUpdater:
 
         self.last_sent_values: dict[str, Any] = {}
         self.float_tolerance = 1e-3
+
+        # BaSyx guarda los valores en memoria: si se reinicia vuelve a los del
+        # modelo base. Para no depender de que cada valor cambie, se reenvía todo
+        # cada `resync_interval` s (0 = nunca) y tras cualquier fallo de envío.
+        self.resync_interval = resync_interval
+        self._clock = clock
+        self._last_resync = clock()
 
     def _load_submodel_ids(self) -> dict[str, str]:
         tree = ET.parse(self.aas_xml_path)
@@ -107,6 +122,13 @@ class BaSyxUpdater:
     def update_from_dict(self, values: dict[str, Any]) -> list[str]:
         updated: list[str] = []
 
+        if (
+            self.resync_interval > 0
+            and self._clock() - self._last_resync >= self.resync_interval
+        ):
+            self.last_sent_values.clear()
+            self._last_resync = self._clock()
+
         for mapping in self.mappings:
             if not mapping.get("enabled", True):
                 continue
@@ -131,11 +153,16 @@ class BaSyxUpdater:
 
             idshort_path = self._build_idshort_path(aas)
 
-            self._patch_property_value(
-                submodel_identifier=submodel_identifier,
-                idshort_path=idshort_path,
-                value=value,
-            )
+            try:
+                self._patch_property_value(
+                    submodel_identifier=submodel_identifier,
+                    idshort_path=idshort_path,
+                    value=value,
+                )
+            except Exception:
+                # BaSyx pudo caerse o reiniciarse: al volver hay que reenviar todo.
+                self.last_sent_values.clear()
+                raise
 
             self.last_sent_values[name] = value
             updated.append(name)

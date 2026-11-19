@@ -68,7 +68,8 @@ docker compose -f docker-compose.yml -f compose.basyx.yaml up -d
 - Define `BASYX_URL` en el historian (el override lo hace); sin esa variable no hace nada de BaSyx.
 - Desactiva FA³ST (mismo puerto `8081`). API en `http://<host>:8081`, interfaz en `http://<host>:3000`.
 - BaSyx arranca desde `Embolsadora_V3.xml` y recibe cada valor por `PATCH`, en un hilo aparte: si BaSyx está caído el ciclo del historian no se frena, se registra `basyx.update_failed` y se reintenta cuando el valor cambie.
-- Si reiniciás solo BaSyx pierde los valores (arranca con los del modelo base) hasta que cada uno cambie; reiniciá también `app` para reenviarlos todos.
+- Si BaSyx se reinicia vuelve a los valores del modelo base; el historian los reenvía todos tras cualquier fallo de envío y, en todo caso, cada `BASYX_RESYNC_S` segundos (60 por defecto; `0` lo desactiva).
+- No hace falta `AAS_OUTPUT_PATH`: BaSyx se alimenta sin reescribir el XML runtime en cada ciclo. Solo se necesita `AAS_XML_PATH` y el mapping.
 - Las imágenes están fijadas en `compose.basyx.yaml` y se pisan con `BASYX_IMAGE` / `BASYX_UI_IMAGE`.
 
 ## Troubleshooting

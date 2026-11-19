@@ -139,6 +139,7 @@ def main() -> None:
                 base_url=basyx_url,
                 aas_xml_path=aas_xml_path,
                 mapping_doc=mapping_doc,
+                resync_interval=float(os.environ.get("BASYX_RESYNC_S", "60")),
             )
         except Exception as ex:
             struct_log(
@@ -308,7 +309,7 @@ def main() -> None:
                     reason="plc_unreachable",
                 )
 
-            if aas_updater is not None:
+            if aas_updater is not None or basyx_worker is not None:
                 aas_values = {
                     tag_name: meta["value"]
                     for tag_name, meta in cycle_values.items()
@@ -316,18 +317,21 @@ def main() -> None:
                 }
 
                 if aas_values:
-                    try:
-                        updated_tags = aas_updater.update_from_dict(aas_values)
-                        aas_updater.save(aas_output_path)
-                        struct_log(
-                            "info",
-                            "aas.updated",
-                            updated_tags=updated_tags,
-                            output_path=aas_output_path,
-                        )
-                    except Exception as ex:
-                        struct_log("error", "aas.update_failed", error=str(ex))
+                    if aas_updater is not None:
+                        try:
+                            updated_tags = aas_updater.update_from_dict(aas_values)
+                            aas_updater.save(aas_output_path)
+                            struct_log(
+                                "info",
+                                "aas.updated",
+                                updated_tags=updated_tags,
+                                output_path=aas_output_path,
+                            )
+                        except Exception as ex:
+                            struct_log("error", "aas.update_failed", error=str(ex))
 
+                    # BaSyx es independiente del XML runtime: se puede usar sin
+                    # AAS_OUTPUT_PATH, evitando reescribir ~500 KB por ciclo.
                     if basyx_worker is not None:
                         basyx_worker.submit(aas_values)
 

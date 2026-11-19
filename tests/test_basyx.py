@@ -91,6 +91,55 @@ def test_bool_se_compara_por_igualdad():
     assert u.update_from_dict({"modo": False}) == ["modo"]
 
 
+def _updater_con_reloj(interval):
+    d = tempfile.mkdtemp()
+    p = os.path.join(d, "aas.xml")
+    with open(p, "w", encoding="utf-8") as f:
+        f.write(XML)
+    t = [0.0]
+    u = BaSyxUpdater("http://basyx:8081", p, MAPPING, resync_interval=interval, clock=lambda: t[0])
+    calls = []
+    u._patch_property_value = lambda **kw: calls.append(kw)
+    return u, calls, t
+
+
+def test_reenvia_todo_pasado_el_intervalo_de_resincronizacion():
+    u, calls, t = _updater_con_reloj(60)
+    u.update_from_dict({"peso": 1.0, "modo": 2})
+    t[0] = 30
+    assert u.update_from_dict({"peso": 1.0, "modo": 2}) == []      # aún no
+    t[0] = 61
+    assert u.update_from_dict({"peso": 1.0, "modo": 2}) == ["peso", "modo"]
+    t[0] = 90
+    assert u.update_from_dict({"peso": 1.0, "modo": 2}) == []      # el reloj se reinicia
+    assert len(calls) == 4
+
+
+def test_resincronizacion_desactivada_con_cero():
+    u, _, t = _updater_con_reloj(0)
+    u.update_from_dict({"peso": 1.0})
+    t[0] = 10_000
+    assert u.update_from_dict({"peso": 1.0}) == []
+
+
+def test_tras_un_fallo_se_reenvia_todo_al_recuperarse():
+    u, calls, _ = _updater_con_reloj(0)
+    u.update_from_dict({"peso": 1.0, "modo": 2})
+    ok = u._patch_property_value
+
+    def boom(**kw):
+        raise OSError("basyx reiniciándose")
+
+    u._patch_property_value = boom
+    try:
+        u.update_from_dict({"peso": 5.0})
+    except OSError:
+        pass
+    assert u.last_sent_values == {}
+    u._patch_property_value = ok         # BaSyx volvió, con valores del modelo base
+    assert u.update_from_dict({"peso": 5.0, "modo": 2}) == ["peso", "modo"]
+
+
 def test_submodelo_inexistente_levanta_keyerror():
     u, _ = _updater()
     try:

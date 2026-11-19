@@ -10,6 +10,8 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY src /app/src
+# Modelo AAS base: lo usa AAS_XML_PATH (BaSyx / FA³ST) sin necesitar el repo en el host.
+COPY Embolsadora_V3.xml /app/Embolsadora_V3.xml
 
 ENV PYTHONUNBUFFERED=1
 ENV HISTORIAN_TAGS=/app/src/historian/tags.yaml
