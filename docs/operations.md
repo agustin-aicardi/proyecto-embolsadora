@@ -2,7 +2,7 @@
 title: Operación del historian
 owner: Federico Degiovanni
 status: vigente
-last_reviewed: 2026-10-29
+last_reviewed: 2026-11-19
 ---
 
 # Operación
@@ -56,6 +56,20 @@ El historian **no expone ningún endpoint ni métricas**. Tiene dos señales:
 | `heartbeat.failed` | No se pudo escribir el archivo de latido (una sola vez); el contenedor pasará a `unhealthy` |
 | `aas.updated` / `aas.update_failed` | Resultado de la actualización del XML AAS |
 | `cycle.completed` | Fin de ciclo, con `tags_ok` y `tags_bad` |
+
+## Servir el AAS con Eclipse BaSyx (opcional)
+
+En vez de FA³ST, el historian puede publicar los valores en un AAS Environment de Eclipse BaSyx:
+
+```bash
+docker compose -f docker-compose.yml -f compose.basyx.yaml up -d
+```
+
+- Define `BASYX_URL` en el historian (el override lo hace); sin esa variable no hace nada de BaSyx.
+- Desactiva FA³ST (mismo puerto `8081`). API en `http://<host>:8081`, interfaz en `http://<host>:3000`.
+- BaSyx arranca desde `Embolsadora_V3.xml` y recibe cada valor por `PATCH`, en un hilo aparte: si BaSyx está caído el ciclo del historian no se frena, se registra `basyx.update_failed` y se reintenta cuando el valor cambie.
+- Si reiniciás solo BaSyx pierde los valores (arranca con los del modelo base) hasta que cada uno cambie; reiniciá también `app` para reenviarlos todos.
+- Las imágenes están fijadas en `compose.basyx.yaml` y se pisan con `BASYX_IMAGE` / `BASYX_UI_IMAGE`.
 
 ## Troubleshooting
 
