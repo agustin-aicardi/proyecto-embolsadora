@@ -10,6 +10,9 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY src /app/src
+# Modelo AAS base para AAS_XML_PATH (BaSyx), sin necesitar el repo en el host. Va en su
+# propia carpeta para que un volumen nombrado montado ahí se inicialice con él.
+COPY Embolsadora_V3.xml /app/model/Embolsadora_V3.xml
 
 ENV PYTHONUNBUFFERED=1
 ENV HISTORIAN_TAGS=/app/src/historian/tags.yaml

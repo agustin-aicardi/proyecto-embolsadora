@@ -256,6 +256,30 @@ class AASUpdater:
         return updated
 
     def save(self, output_path: str) -> None:
+        import os
+        import tempfile
+
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        self.tree.write(output_path, encoding="utf-8", xml_declaration=True)
+
+        temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=output_path.parent,
+                prefix=f".{output_path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+                self.tree.write(
+                    temp_file,
+                    encoding="utf-8",
+                    xml_declaration=True,
+                )
+
+            os.replace(temp_path, output_path)
+
+        finally:
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)

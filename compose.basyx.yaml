@@ -1,0 +1,48 @@
+# Override opcional: sirve el AAS con Eclipse BaSyx en vez de FA³ST.
+#
+#   docker compose -f docker-compose.yml -f compose.basyx.yaml up -d
+#
+# BaSyx y FA³ST publican el mismo puerto del host (8081), así que este override
+# desactiva FA³ST (queda tras el perfil `faaast`, que no se activa).
+# El historian PATCHea cada valor por la API REST de BaSyx (BASYX_URL); BaSyx
+# carga el modelo base (Embolsadora_V3.xml) al arrancar y recibe los valores por PATCH.
+#
+# Versiones: las imágenes de BaSyx no tienen release estable para esta API, por
+# eso se fijan acá y se pueden pisar con BASYX_IMAGE / BASYX_UI_IMAGE.
+
+services:
+  app:
+    environment:
+      BASYX_URL: http://basyx:8081
+
+  faaast:
+    profiles: ["faaast"]
+
+  basyx:
+    image: ${BASYX_IMAGE:-eclipsebasyx/aas-environment:2.0.0-milestone-16}
+    container_name: basyx_aas_environment
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    volumes:
+      # Modelo base: runtime/Embolsadora_runtime.xml está versionado vacío y
+      # recién lo escribe el historian, así que BaSyx no puede arrancar de ahí.
+      - ./Embolsadora_V3.xml:/app/model/Embolsadora_V3.xml:ro
+      - ./basyx/application.properties:/application/application.properties:ro
+    depends_on:
+      - app
+    networks:
+      - pe_net
+
+  basyx-ui:
+    image: ${BASYX_UI_IMAGE:-eclipsebasyx/aas-gui:SNAPSHOT-20261118-092736-e595b37}
+    container_name: basyx-ui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      ENDPOINT_CONFIG_AVAILABLE: "true"
+    depends_on:
+      - basyx
+    networks:
+      - pe_net
